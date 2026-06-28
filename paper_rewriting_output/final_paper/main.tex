@@ -1,0 +1,626 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+\usepackage[nameinlink,noabbrev]{cleveref}
+\usepackage{microtype}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\data}{\mathrm{data}}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+\title{Deep Theory Analysis for General Stochastic-Interpolant E-PVM}
+\author{}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This note analyzes the theoretical spine of endpoint-posterior velocity matching
+(E-PVM) for generator-induced stochastic interpolants. The main message is that
+the endpoint-posterior velocity identity is algebraically clean, but fixed-level
+velocity matching alone is generally insufficient to guarantee endpoint
+generation accuracy. For general stochastic interpolants, the conditional
+velocity mixes the posterior mean of the base endpoint and the posterior mean of
+the data endpoint. Thus a theory must either use a special bridge/base where the
+base posterior can be eliminated, add a score or density closure equation, or
+prove a new single-level velocity identifiability theorem under structural
+assumptions.
+\end{abstract}
+
+\tableofcontents
+
+\section{Main Takeaway}
+
+For a general stochastic interpolant, the endpoint-posterior velocity identity
+is clean, but fixed-level velocity matching alone is usually not enough to prove
+endpoint generation accuracy. The reason is structural:
+\begin{equation}
+v_t(x)
+=
+\lambda_t x
++A_t m_t^0(x)
++B_t m_t^1(x).
+\end{equation}
+This is only one vector equation, while the posterior contains two unknown
+endpoint posterior means:
+\begin{equation}
+m_t^0(x)=\E[X_0\mid I_t=x],
+\qquad
+m_t^1(x)=\E[X_1\mid I_t=x].
+\end{equation}
+Thus the theory must either:
+\begin{enumerate}[label=(\roman*)]
+\item choose a special bridge/base where \(m_t^0\) can be integrated out;
+\item add an intermediate density or score control that gives a second equation;
+\item prove a new single-level velocity identifiability theorem under strong
+structural assumptions.
+\end{enumerate}
+This should be the central theoretical framing.
+
+\section{General Identity}
+
+Let the data interpolant be
+\begin{equation}
+I_t
+=
+a_tX_0+b_tX_1+\gamma_t\varepsilon,
+\qquad
+\varepsilon\sim\cN(0,I_D),
+\end{equation}
+and let the model interpolant be
+\begin{equation}
+I_{\theta,t}
+=
+a_tX_0+b_t h_\theta(U)+\gamma_t\varepsilon,
+\qquad
+U\sim\pi.
+\end{equation}
+Define
+\begin{equation}
+\lambda_t=\frac{\dot\gamma_t}{\gamma_t},
+\qquad
+A_t=\dot a_t-\lambda_t a_t,
+\qquad
+B_t=\dot b_t-\lambda_t b_t.
+\end{equation}
+
+\begin{proposition}[Endpoint-posterior velocity identity]
+Assume \(\gamma_t>0\). The data conditional velocity satisfies
+\begin{equation}
+v_{\data,t}(x)
+=
+\lambda_t x
++A_t m_{\data,t}^0(x)
++B_t m_{\data,t}^1(x),
+\end{equation}
+where
+\begin{equation}
+m_{\data,t}^0(x)
+=
+\E[X_0\mid I_t=x],
+\qquad
+m_{\data,t}^1(x)
+=
+\E[X_1\mid I_t=x].
+\end{equation}
+The model conditional velocity satisfies
+\begin{equation}
+v_{\theta,t}(x)
+=
+\lambda_t x
++A_t m_{\theta,t}^0(x)
++B_t m_{\theta,t}^1(x),
+\end{equation}
+where
+\begin{equation}
+m_{\theta,t}^0(x)
+=
+\E_\theta[X_0\mid I_{\theta,t}=x],
+\qquad
+m_{\theta,t}^1(x)
+=
+\E_\theta[h_\theta(U)\mid I_{\theta,t}=x].
+\end{equation}
+\end{proposition}
+
+\begin{proof}[Algebra]
+On the data bridge,
+\begin{equation}
+\varepsilon
+=
+\frac{x-a_tX_0-b_tX_1}{\gamma_t}
+\end{equation}
+when conditioning on \(I_t=x\). Substituting this into
+\begin{equation}
+\dot I_t=\dot a_tX_0+\dot b_tX_1+\dot\gamma_t\varepsilon
+\end{equation}
+and taking the conditional expectation gives the claimed expression. The model
+identity is identical with \(X_1\) replaced by \(h_\theta(U)\).
+\end{proof}
+
+\section{Why General SI Is Harder Than MAGT}
+
+MAGT's Gaussian smoothing effectively has one posterior mean:
+\begin{equation}
+Y_t=\alpha_tX+\sigma_tZ,
+\qquad
+m_t(x)=\E[X\mid Y_t=x].
+\end{equation}
+The score satisfies a Tweedie identity:
+\begin{equation}
+s_t(x)
+=
+\nabla\log p_t(x)
+=
+-\frac{x-\alpha_t m_t(x)}{\sigma_t^2}.
+\end{equation}
+Therefore controlling the posterior mean is equivalent to controlling the score,
+and the proof chain is:
+\begin{equation}
+\text{posterior mean error}
+\Longleftrightarrow
+\text{score/Fisher error}
+\Longrightarrow
+W_2(p_t,p_{\theta,t})
+\Longrightarrow
+W_2(P_X,P_{h_\theta(U)}).
+\end{equation}
+For a general stochastic interpolant, however,
+\begin{equation}
+v_t(x)
+=
+\lambda_t x+A_t m_t^0(x)+B_t m_t^1(x)
+\end{equation}
+does not directly give a Fisher divergence. It mixes the base posterior and the
+endpoint posterior. This is the main theoretical obstruction.
+
+\section{A Useful Second Equation: Score Closure}
+
+The intermediate score is
+\begin{equation}
+s_t(x)
+=
+\nabla\log p_t(x)
+=
+-\frac{
+x-a_t m_t^0(x)-b_t m_t^1(x)
+}{
+\gamma_t^2
+}.
+\end{equation}
+Equivalently,
+\begin{equation}
+a_t m_t^0(x)+b_t m_t^1(x)
+=
+x+\gamma_t^2 s_t(x).
+\end{equation}
+Together with
+\begin{equation}
+A_t m_t^0(x)+B_t m_t^1(x)
+=
+v_t(x)-\lambda_t x,
+\end{equation}
+we obtain the two-equation system
+\begin{equation}
+\begin{pmatrix}
+a_t & b_t\\
+A_t & B_t
+\end{pmatrix}
+\begin{pmatrix}
+m_t^0(x)\\
+m_t^1(x)
+\end{pmatrix}
+=
+\begin{pmatrix}
+x+\gamma_t^2s_t(x)\\
+v_t(x)-\lambda_t x
+\end{pmatrix}.
+\end{equation}
+The determinant is
+\begin{equation}
+\Delta_t
+=
+a_tB_t-b_tA_t
+=
+a_t\dot b_t-b_t\dot a_t.
+\end{equation}
+Thus, if
+\begin{equation}
+\Delta_t\ne0,
+\end{equation}
+then the pair \((s_t,v_t)\) identifies both posterior means.
+
+\begin{proposition}[Score--velocity closure]
+If \(\Delta_t\neq0\), then
+\begin{equation}
+m_t^1(x)
+=
+\frac{
+a_t\{v_t(x)-\lambda_t x\}
+-A_t\{x+\gamma_t^2s_t(x)\}
+}{
+\Delta_t
+}.
+\end{equation}
+Consequently,
+\begin{equation}
+\norm{m_{\theta,t}^1-m_{\data,t}^1}
+\le
+\frac{|a_t|}{|\Delta_t|}
+\norm{v_{\theta,t}-v_{\data,t}}
++
+\frac{|A_t|\gamma_t^2}{|\Delta_t|}
+\norm{s_{\theta,t}-s_{\data,t}},
+\end{equation}
+for any common norm under which the displayed quantities are defined.
+\end{proposition}
+
+This is a useful bridge between general stochastic-interpolant velocity theory
+and MAGT-style score theory:
+\begin{equation}
+\text{velocity mismatch}
++
+\text{score/density mismatch}
+\Longrightarrow
+\text{endpoint posterior mismatch}.
+\end{equation}
+
+\section{Gaussian-Base Reduction}
+
+Suppose
+\begin{equation}
+X_0\sim\cN(0,I_D),
+\qquad
+X_0\perp X_1,
+\end{equation}
+and
+\begin{equation}
+I_t=a_tX_0+b_tX_1+\gamma_t\varepsilon.
+\end{equation}
+Let
+\begin{equation}
+S_t=a_t^2+\gamma_t^2.
+\end{equation}
+Conditioned on \(X_1=y\),
+\begin{equation}
+I_t\mid X_1=y
+\sim
+\cN(b_ty,S_tI_D).
+\end{equation}
+Thus the bridge is a Gaussian corruption of the endpoint \(X_1\), with signal
+coefficient \(b_t\) and noise variance \(S_t\). Moreover,
+\begin{equation}
+m_t^0(x)
+=
+\frac{a_t}{S_t}
+\left(
+x-b_tm_t^1(x)
+\right).
+\end{equation}
+Substituting into the velocity identity yields
+\begin{equation}
+v_t(x)
+=
+D_t x+C_t m_t^1(x),
+\end{equation}
+where
+\begin{equation}
+D_t
+=
+\lambda_t+\frac{A_ta_t}{S_t},
+\qquad
+C_t
+=
+B_t-\frac{A_ta_tb_t}{S_t}.
+\end{equation}
+If
+\begin{equation}
+C_t\ne0,
+\end{equation}
+then
+\begin{equation}
+m_t^1(x)
+=
+\frac{v_t(x)-D_tx}{C_t}.
+\end{equation}
+In this special case, velocity matching is equivalent to endpoint posterior mean
+matching. The score is also
+\begin{equation}
+s_t(x)
+=
+-\frac{x-b_tm_t^1(x)}{S_t}.
+\end{equation}
+Therefore,
+\begin{equation}
+v_{\theta,t}-v_{\data,t}
+=
+C_t
+\left(
+m_{\theta,t}^1-m_{\data,t}^1
+\right)
+=
+-\frac{C_tS_t}{b_t}
+\left(
+s_{\theta,t}-s_{\data,t}
+\right),
+\end{equation}
+assuming \(b_t\ne0\). This is the clean subcase where the theory can inherit
+MAGT almost directly.
+
+For the roadmap's linear noisy choice,
+\begin{equation}
+a_t=1-t,
+\qquad
+b_t=t,
+\qquad
+\gamma_t^2=2t(1-t),
+\end{equation}
+we have
+\begin{equation}
+S_t=1-t^2,
+\end{equation}
+and the velocity simplifies to
+\begin{equation}
+v_t(x)
+=
+\frac{m_t^1(x)-tx}{1-t^2}.
+\end{equation}
+This special case should be presented as the first tractable theorem, not as the
+whole novelty.
+
+\section{What a General SI Theory Must Prove}
+
+\subsection{Theorem 1: Endpoint-Posterior Velocity Identity}
+
+Prove
+\begin{equation}
+v_{\theta,t}(x)
+=
+\lambda_t x
++A_t m_{\theta,t}^0(x)
++B_t m_{\theta,t}^1(x).
+\end{equation}
+This is mostly algebra, but it establishes the conceptual object.
+
+\subsection{Theorem 2: Population Velocity Calibration}
+
+For any measurable \(v_{\theta,\tau}\),
+\begin{align}
+&\E
+\left[
+\norm{v_{\theta,\tau}(I_\tau)-\dot I_\tau}^2
+\right] \nonumber\\
+&\quad =
+\E
+\left[
+\norm{v_{\data,\tau}(I_\tau)-\dot I_\tau}^2
+\right]
++
+\E_{p_\tau}
+\left[
+\norm{v_{\theta,\tau}-v_{\data,\tau}}^2
+\right].
+\end{align}
+This says the velocity objective is calibrated to fixed-level conditional
+velocity error.
+
+\subsection{Theorem 3: Gaussian-Base Velocity--Score Equivalence}
+
+Under Gaussian base and independent endpoint coupling,
+\begin{equation}
+\norm{v_{\theta,\tau}-v_{\data,\tau}}_{L^2(p_\tau)}^2
+\asymp
+\norm{s_{\theta,\tau}-s_{\data,\tau}}_{L^2(p_\tau)}^2,
+\end{equation}
+with explicit constants determined by \(a_\tau,b_\tau,\gamma_\tau\). This theorem
+explains precisely why the Gaussian noisy case is close to MAGT.
+
+\subsection{Theorem 4: General SI Closure With Score/Density Residual}
+
+For a general base/interpolant, prove something like
+\begin{align}
+&\norm{m_{\theta,\tau}^1-m_{\data,\tau}^1}_{L^2(p_\tau)}
+\nonumber\\
+&\quad \le
+C_\tau
+\left(
+\norm{v_{\theta,\tau}-v_{\data,\tau}}_{L^2(p_\tau)}
++
+\gamma_\tau^2
+\norm{s_{\theta,\tau}-s_{\data,\tau}}_{L^2(p_\tau)}
+\right),
+\end{align}
+provided
+\begin{equation}
+\Delta_\tau=a_\tau\dot b_\tau-b_\tau\dot a_\tau
+\ne0.
+\end{equation}
+This is not yet endpoint \(W_2\), but it is the missing algebraic closure.
+
+\subsection{Theorem 5: Single-Level Velocity Pull-Back}
+
+The ambitious target is
+\begin{equation}
+W_2(P_{X_1},P_{h_\theta(U)})
+\le
+C_\tau
+\norm{v_{\theta,\tau}-v_{\data,\tau}}_{L^2(p_\tau)}
++
+R_\tau.
+\end{equation}
+The residual \(R_\tau\) should be made explicit. Likely candidates are
+\begin{equation}
+R_\tau
+=
+C_\tau'
+W_2(p_{\theta,\tau},p_\tau),
+\end{equation}
+or
+\begin{equation}
+R_\tau
+=
+C_\tau'
+\norm{s_{\theta,\tau}-s_{\data,\tau}}_{L^2(p_\tau)}.
+\end{equation}
+The pure velocity-only version is the hardest and may be false without extra
+assumptions.
+
+\subsection{Theorem 6: Finite Estimator Perturbation}
+
+For anchors or any estimator,
+\begin{equation}
+\E_{p_\tau}
+\left[
+\norm{\widehat v_{\theta,K,\tau}-v_{\theta,\tau}}^2
+\right]
+\le
+\varepsilon_K^2.
+\end{equation}
+Then the population theorem receives an additive perturbation:
+\begin{equation}
+W_2(P_{X_1},P_{h_\theta(U)})
+\le
+C_\tau
+\left(
+\widehat{\mathcal E}_{\mathrm{vel}}^{1/2}
++
+\varepsilon_K
+\right)
++
+R_\tau.
+\end{equation}
+This keeps anchors out of the main theorem until a concrete estimator is
+selected.
+
+\section{Recommended Proof Strategy}
+
+\subsection{Stage A: Safe Theorem}
+
+Prove the Gaussian-base reduction:
+\begin{equation}
+X_0\sim\cN(0,I_D)
+\quad
+\Longrightarrow
+\quad
+v_t(x)=D_tx+C_tm_t^1(x).
+\end{equation}
+Then show velocity matching is equivalent to score/denoiser matching and
+inherits MAGT-style pull-back. This theorem is low risk but MAGT-adjacent.
+
+\subsection{Stage B: General Identity and Closure}
+
+Prove the two-equation closure:
+\begin{equation}
+(s_t,v_t)
+\Longleftrightarrow
+(m_t^0,m_t^1)
+\quad
+\text{if}
+\quad
+\Delta_t\ne0.
+\end{equation}
+This is genuinely general stochastic-interpolant theory and clarifies why
+velocity alone is insufficient.
+
+\subsection{Stage C: Partial Pull-Back}
+
+Prove a theorem with an explicit residual:
+\begin{equation}
+W_2(P_{X_1},P_{h_\theta(U)})
+\le
+C_\tau
+\norm{v_{\theta,\tau}-v_{\data,\tau}}_{L^2(p_\tau)}
++
+C_\tau'
+W_2(p_{\theta,\tau},p_\tau).
+\end{equation}
+This is easier and honest: fixed-level velocity needs intermediate distribution
+alignment unless the Gaussian-base reduction applies.
+
+\subsection{Stage D: Pure Velocity Pull-Back, If Possible}
+
+Try to remove the residual using a growth lemma:
+\begin{equation}
+\norm{v_{\theta,t}-v_{\data,t}}_{L^2(p_t)}
+\le
+G(t,\tau)
+\norm{v_{\theta,\tau}-v_{\data,\tau}}_{L^2(p_\tau)}.
+\end{equation}
+This likely requires strong assumptions:
+\begin{equation}
+\norm{\nabla v_t}_{\infty}\le L_t,
+\qquad
+\norm{\nabla^2\log p_t}_{\infty}\le H_t,
+\end{equation}
+plus nondegenerate density and manifold tube conditions.
+
+\section{Bridge-Design Insight}
+
+The coefficients
+\begin{equation}
+A_t=\dot a_t-\lambda_ta_t,
+\qquad
+B_t=\dot b_t-\lambda_tb_t
+\end{equation}
+determine how much the velocity depends on base posterior versus endpoint
+posterior. If one can choose a schedule with small \(|A_\tau|\), then
+\begin{equation}
+v_{\theta,\tau}(x)
+\approx
+\lambda_\tau x+B_\tau m_{\theta,\tau}^1(x),
+\end{equation}
+which makes endpoint recovery easier. The condition
+\begin{equation}
+A_\tau=0
+\end{equation}
+means
+\begin{equation}
+\frac{\dot a_\tau}{a_\tau}
+=
+\frac{\dot\gamma_\tau}{\gamma_\tau}.
+\end{equation}
+This may be impossible globally with endpoint boundary conditions, but it can
+guide a single-level bridge design. This is a potential theoretical design knob
+distinct from anchors.
+
+\section{Suggested Revised Contribution Statement}
+
+The paper should claim:
+\begin{enumerate}
+\item We derive endpoint-posterior velocity identities for generator-induced
+noisy stochastic interpolants.
+\item We show that the Gaussian-base noisy bridge reduces to a MAGT-like
+endpoint posterior mean and admits velocity--score equivalence.
+\item For general stochastic interpolants, we prove that velocity alone mixes
+base and data endpoint posteriors; a score/density closure or special bridge
+design is required.
+\item We formulate and partially prove a single-level velocity pull-back theorem
+with explicit residual terms.
+\item We treat anchors as a generic plug-in estimator satisfying an \(L^2\)
+velocity approximation condition.
+\end{enumerate}
+
+This is a cleaner and more defensible theory story than making anchor design the
+primary novelty.
+
+\end{document}

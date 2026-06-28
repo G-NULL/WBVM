@@ -1,0 +1,41 @@
+{
+   "sources" : [
+      {
+         "usage" : "toplevel",
+         "filename" : "main.tex"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "img_ma/cifar5.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "img_ma/cifar_diff.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "img_ma/cifar_fm.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "img_ma/geno_pca.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "img_ma/knt.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "img_ma/mnist.png"
+      },
+      {
+         "usage" : "ignore",
+         "filename" : "img_ma/toy_6x4.png"
+      }
+   ],
+   "spec_version" : 1,
+   "texlive_version" : "2025",
+   "process" : {
+      "compiler" : "pdflatex"
+   }
+}

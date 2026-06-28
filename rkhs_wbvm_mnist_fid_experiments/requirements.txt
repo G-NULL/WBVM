@@ -1,0 +1,10 @@
+numpy
+matplotlib
+pandas
+scipy
+tqdm
+paramiko
+torch
+torchvision
+torchmetrics
+torch-fidelity

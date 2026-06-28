@@ -1,0 +1,3667 @@
+% \documentclass[11pt]{article}
+% \usepackage[margin=1in]{geometry}
+% ORCID icons (optional; falls back to no-op if package unavailable)
+\documentclass[12pt]{article}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{enumerate}
+\usepackage{natbib}
+\usepackage{url} % not crucial - just used below for the URL 
+\usepackage[title]{appendix}
+%\pdfminorversion=4
+% NOTE: To produce blinded version, replace "0" with "1" below.
+\newcommand{\blind}{1}
+
+% DON'T change margins - should be 1 inch all around.
+\addtolength{\oddsidemargin}{-.5in}%
+\addtolength{\evensidemargin}{-1in}%
+\addtolength{\textwidth}{1in}%
+\addtolength{\textheight}{1.7in}%
+\addtolength{\topmargin}{-1in}%
+
+\IfFileExists{orcidlink.sty}{\usepackage{orcidlink}}{\newcommand{\orcidlink}[1]{}}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{ragged2e}
+\usepackage{caption}
+\usepackage{xcolor}
+\makeatletter
+\expandafter\ifx\csname T@T1\endcsname\relax\else
+\DeclareFontShape{T1}{cmr}{m}{scit}{<-> ssub * cmr/m/scsl}{}
+\fi
+\makeatother
+\usepackage[utf8]{inputenc} % for UTF-8 input
+%\DeclareUnicodeCharacter{202F}{\,} % map narrow no-break space to thin space
+\usepackage[T1]{fontenc} 
+\usepackage{amsthm,booktabs,mathtools}
+\newtheorem{assumption}{Assumption}
+\theoremstyle{definition} % upright text, like definitions/examples
+\newtheorem{example}{Example}[section]
+\newtheorem{definition}{Definition} 
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{proposition}{Proposition} 
+\newtheorem{lemma}{Lemma}
+\newtheorem{remark}{Remark}
+\usepackage{amsmath,amsfonts,amssymb,comment}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+% Silence math in PDF bookmarks
+\makeatletter
+\@ifpackageloaded{hyperref}{\pdfstringdefDisableCommands{\def\M{M}}}{}
+\makeatother
+\usepackage{bm}
+\usepackage{graphicx}
+% --- Robust figure inclusion (avoids hard errors when an image file is missing) ---
+\newcommand{\safeincludegraphics}[2][]{%
+  \IfFileExists{#2}{\includegraphics[#1]{#2}}{%
+    \fbox{\parbox[c]{0.95\linewidth}{\centering\small Missing figure file: \texttt{\detokenize{#2}}}}%
+  }%
+}
+
+\usepackage{subcaption}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tikz} % TikZ core
+\usepackage{subcaption} 
+\usepackage{booktabs}
+\usepackage{makecell}
+\usepackage{multirow}
+\usetikzlibrary{positioning,arrows,shapes.geometric}
+\newcommand{\change}[1]{\color{blue}{#1}\color{black}{}}
+
+
+
+\DeclareMathOperator{\KLop}{KL} % Kullback--Leibler divergence
+\DeclareMathOperator{\Ent}{Ent} % entropy functional
+\newcommand{\KL}[2]{\KLop\bigl(#1\,\|\,#2\bigr)}
+\newcommand{\Wtwo}{\mathcal{W}_2}
+\newcommand{\I}{\mathcal{I}}
+\newcommand{\independent}{\mathrel{\perp\!\!\!\perp}}
+
+
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\bigO}{\mathcal{O}}
+\newcommand{\R}{\mathbb{R}}
+\renewcommand{\P}{\ensuremath{\mathbb{P}}} % probability
+\newcommand{\Pouter}{\ensuremath{\mathbb{P}^{*}}} % outer probability
+\newcommand{\ER}{\mathrm{Er}}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\M}{\mathcal{M}}
+\newcommand{\X}{\bm X}
+\newcommand{\U}{\bm U}
+\newcommand{\Y}{\bm Y}
+\newcommand{\Z}{\bm Z}
+\newcommand{\y}{\bm y}
+\newcommand{\x}{\bm x}
+\newcommand{\z}{\bm z}
+\newcommand{\W}{\bm W}
+\newcommand{\w}{\bm w}
+\newcommand{\Law}{L}
+\newcommand{\Lip}{\operatorname{Lip}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\cF}{\mathcal{F}}
+\newcommand{\cG}{\mathcal{G}}
+\newcommand{\cL}{L}
+\newcommand{\cU}{\mathcal{U}}
+\newcommand{\inj}{\operatorname{inj}}
+\newcommand{\diam}{\operatorname{diam}}
+\newcommand{\dist}{\operatorname{dist}}
+\newcommand{\reach}{\operatorname{reach}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\tr}{\operatorname{Tr}} % trace
+\newcommand{\Haus}{\mathbb{H}}
+\newcommand{\supp}{\operatorname{supp}}
+
+\usepackage{amsmath,amssymb,amsthm}
+\makeatletter
+\@ifundefined{KL}{\DeclareMathOperator{\KL}{KL}}{}
+\@ifundefined{Law}{\DeclareMathOperator{\Law}{Law}}{}
+\makeatother
+\providecommand{\I}{\mathcal{I}}
+\providecommand{\E}{\mathbb{E}}
+% --- Added macros for distributions / QMC notation (auto-added) ---
+\newcommand{\Unif}{\mathrm{Unif}}
+\newcommand{\HK}{\mathrm{HK}}
+\newcommand{\VHK}{V_{\HK}}
+
+% --- Method name macro (added automatically) ---
+\providecommand{\method}{MAGT} % Manifold-Aligned Generative Transport
+% ---------------------------------------------
+% ==== Auto-added operators ====
+
+\newcommand{\Rad}{\mathfrak{R}}
+\newcommand{\cN}{\mathcal{N}}
+
+\begin{document}
+% \title{Manifold-Aligned Generative Transport
+% \thanks{This work was supported in part by NSF grant DMS-2513668 and NIH grants
+% R01AG069895, R01AG065636, R01AG074858. (Corresponding author: Xiaotong Shen.) }}
+% \author{Xinyu Tian \thanks{Xinyu Tian is with the School of Statistics, University of Minnesota, MN, 55455 USA (email:
+% tianx@umn.edu)}, Xiaotong Shen \textsuperscript{\orcidlink{0000-0003-1300-1451}} \thanks{Xiaotong Shen is with the School of Statistics, University of Minnesota, MN, 55455 USA (email: xshen@umn.edu)}.}
+% \date{}
+
+% \maketitle
+
+
+\date{}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\if1\blind
+{
+  \title{\bf{Manifold-Aligned Generative Transport}
+\thanks{This work was supported in part by the National Science Foundation (NSF) under Grant 
+DMS-2513668, by the National Institutes of Health (NIH) under Grants R01AG069895, R01AG065636, R01AG074858, and U01AG073079, and by the Minnesota Supercomputing Institute. (Corresponding author: Xiaotong Shen.) }}
+
+\author{Xinyu Tian \thanks{Xinyu Tian is with the School of Statistics, University of Minnesota, MN, 55455 USA (email:
+tianx@umn.edu)}, Xiaotong Shen \textsuperscript{\orcidlink{0000-0003-1300-1451}} \thanks{Xiaotong Shen is with the School of Statistics, University of Minnesota, MN, 55455 USA (email: xshen@umn.edu)}.}
+
+  \maketitle
+} \fi
+
+\if0\blind
+{
+  \bigskip
+  \bigskip
+  \bigskip
+  \begin{center}
+    {\LARGE\bf Manifold-Aligned Generative Transport}
+\end{center}
+  \medskip
+} \fi
+
+
+
+
+\begin{abstract}
+High-dimensional generative modeling is fundamentally a manifold-learning problem: real data concentrate near a low-dimensional structure embedded in the ambient space. Effective generators must therefore balance support fidelity—placing probability mass near the data manifold—with sampling efficiency. Diffusion models often capture near-manifold structure but require many iterative denoising steps and can leak off-support; normalizing flows sample in one pass but are limited by invertibility and dimension preservation. We propose \method{} (Manifold-Aligned Generative Transport), a flow-like generator that learns a one-shot, manifold-aligned transport from a low-dimensional base distribution to the data space. Training is performed at a fixed Gaussian smoothing level, where the score is well-defined and numerically stable. We approximate this fixed-level score using a finite set of latent anchor points with self-normalized importance sampling, yielding a tractable objective. \method{} samples in a single forward pass, concentrates probability near the learned support, and induces an intrinsic density with respect to the manifold volume measure, enabling principled likelihood evaluation for generated samples. We establish finite-sample Wasserstein bounds linking smoothing level and score-approximation accuracy to generative fidelity, and empirically improve fidelity and manifold concentration across synthetic and benchmark datasets while sampling substantially faster than diffusion models.
+\end{abstract}
+
+\noindent{\it Keywords:} Manifold learning, Diffusion, Flows,
+High fidelity, Synthetic data generation.
+
+\section{Introduction}
+
+Modern generative modeling is characterized by a trade-off between fidelity and 
+efficiency. Diffusion models can produce highly realistic samples but typically rely on iterative denoising at inference time, which makes generation expensive even with improved solvers and distillation \citep{dhariwal2021beatgans, karras2022edm, rombach2022ldm, song2023consistency, salimans2022progressive, lu2022dpmsolver}. On the other hand, normalizing flows 
+enable single-pass sampling and tractable likelihoods via change-of-variables training and invertible architectures \citep{dinh2016realnvp, kingma2018glow, papamakarios2021nf}. Continuous-time, transport-based formulations, including probability flow, flow matching, rectified flow, and stochastic interpolants, help bridge these paradigms by casting generation as transport, often reducing the number of function evaluations needed for sampling \citep{song2021score, lipman2022flow, liu2022flow, albergo2023stochastic}. Nonetheless, the most efficient flow constructions remain constrained by invertibility and dimension preservation, while diffusion-based samplers require multiple evaluations at inference time \citep{kobyzev2020nfsurvey, papamakarios2021nf}.
+
+The limitations of existing approaches become most acute in the manifold regime, where data concentrate near a low-dimensional set embedded in a high-dimensional ambient space. 
+This setting is common for images, biological measurements, and learned feature embeddings. When probability mass lies near a thin support, ambient-space modeling can waste capacity in directions orthogonal to the data support and may lead to off-manifold leakage, miscalibrated likelihoods, or unreliable uncertainty estimates and out-of-distribution behavior \citep{nalisnick2019deep, kirichenko2020nout, ren2019likelihood}. Geometry-aware generative methods aim to address these issues by incorporating manifold structure into training, but accurately capturing the relevant geometry while maintaining scalability and stable optimization remains challenging \citep{debortoli2022riemannian, huang2022riemannian}.
+
+We introduce \method{} (\emph{Manifold-Aligned Generative Transport}), a flow-inspired framework designed to reconcile high fidelity with one-shot sampling in the manifold regime. The method trains at a fixed level of Gaussian smoothing in the ambient space, where the perturbed data distribution has a well-defined density and score. A central posterior identity shows that the smoothed score is determined by the clean sample averaged under the posterior given a noisy observation. Building on classical connections between score matching and denoising \citep{hyvarinen2005scorematching,vincent2011scoredae}, \method{} approximates this conditional mean using a finite collection of latent anchors together with self-normalized importance sampling. The anchor approximation can be instantiated with standard Monte Carlo, quasi--Monte Carlo variance reduction, or Laplace-based proposals, yielding a practical score estimator and an end-to-end single-level denoising score-matching objective.
+
+On the theoretical side, we establish a new single-level pull-back inequality that translates a squared score discrepancy between two smoothed distributions at a fixed noise level into a Wasserstein error bound between their corresponding unsmoothed generators. This result highlights the roles of smoothing and underlying manifold geometry in determining generation error. Building on this inequality, we combine it with a finite-sample complexity analysis of fixed-level score-matching risk minimization to obtain nonasymptotic generation bounds whose rates depend on the intrinsic dimension and explicitly quantify the anchor approximation error.
+
+Empirically, experiments on synthetic manifolds as well as image and tabular benchmarks demonstrate that \method{} outperforms diffusion baselines in fidelity across all reported settings and uniformly outperforms GANs; relative to flow matching, \method{} matches or improves fidelity on the synthetic-manifold suite and is best on three of four real benchmarks (MNIST, Superconduct, Genomes), with CIFAR10-0 (airplanes) the only case where flow matching attains a lower FID, using one-shot sampling, while simultaneously improving support concentration and substantially reducing inference-time function evaluations.
+
+ Our contributions are as follows.
+
+1). \textbf{Methodology:} We introduce a non-invertible transport $h:\mathbb{R}^{d}\to\mathbb{R}^{D}$ tailored to the manifold regime, trained at a fixed Gaussian smoothing level via a posterior score identity. A finite set of latent anchors combined with self-normalized importance sampling yields a practical single-level denoising score-matching objective. The learned $h$ enables one-shot sampling and induces an intrinsic density on its image (with respect to $d$-dimensional Hausdorff measure) that is computable under mild regularity conditions; see Table~\ref{tab:summary}.
+
+2). \textbf{Theory:} We prove (i) a new single-level pull-back inequality that converts fixed-level score error into Wasserstein generation error, and (ii) an excess-risk bound for our fixed-level score-matching risk minimization with finite anchors via bracketing entropy. Together, these yield finite-sample generation rates that depend on the intrinsic dimension and explicitly track smoothing and manifold geometry; see Table~\ref{tab:theory-generative-summary}.
+
+3). \textbf{Algorithms:} Practical Monte Carlo, quasi--Monte Carlo, and Laplace-based proposals for anchor selection within a unified training objective.
+
+4). \textbf{Evidence:} Empirical results on synthetic and real image/tabular data indicate consistent fidelity gains over diffusion baselines (all benchmarks) and GANs (all benchmarks); relative to flow matching, \method{} improves or matches fidelity on synthetic manifolds and is best on MNIST, Superconduct, and Genomes, with CIFAR10-0 the only benchmark where flow matching is clearly better in FID. In tabular settings, these gains are substantial: \method{} reduces $W_2$ by $74.9\%$ on Superconduct and $43.6\%$ on Genomes relative to DDIM (Table~\ref{tab:mnist_cifar10}). Under one-shot sampling, \method{} also substantially improves concentration near the data support and reduces inference-time network evaluations by orders of magnitude.
+
+
+The remainder of the paper is organized as follows. Section~\ref{sec:magnet} introduces the \method{} framework, including the transport-based score identity, the resulting one-shot sampler, and practical considerations for likelihood evaluation. Section~\ref{sec:risk} develops nonasymptotic risk bounds that relate single-level score estimation error to Wasserstein generation accuracy. Section~\ref{sec:mcapprox} discusses practical Monte Carlo and quasi-Monte Carlo schemes for approximating the conditional expectations that appear in the \method{} score estimator. Section~\ref{sec:implementation} describes practical implementation details for training \method{}, including a memory-efficient update for large anchor banks. Section~\ref{sec:experiments} presents empirical results on synthetic manifolds and real image/tabular datasets. Section~\ref{sec:discussion} concludes with a brief discussion. The Appendix contains proofs, auxiliary lemmas, and additional experimental and implementation details.
+
+
+\section{MAGT: Manifold-aligned generative transport}
+\label{sec:magnet}
+
+\subsection{Dimension alignment via perturbation}
+\label{subsec:dim}
+
+Consider generative modeling in which observations $\Y_0 \in \mathbb{R}^D$ concentrate near a low-dimensional
+manifold $\mathcal{M} \subset \mathbb{R}^D$ of intrinsic dimension $d \ll D$.
+Our goal is to learn a deterministic \emph{transport} (generator) map
+\( h : \mathbb{R}^{d} \to \mathbb{R}^{D} \) such that, for a latent variable
+\( \U \) drawn from a base distribution with density \( \pi \)
+(e.g., a standard Gaussian on \( \mathbb{R}^{d} \) or a uniform distribution on $[0,1]^{d}$),
+the generated sample \( \Y_0 = h(\U) \) follows the data distribution
+\( p_{\Y_0} \). Importantly, $h$ need not be invertible, and the latent and data dimensions may differ, which is essential when
+the target distribution concentrates on or near a lower-dimensional manifold.
+
+A key obstacle is that if $p_{\Y_0}$ is supported on a manifold, it can be singular with respect to Lebesgue measure on $\mathbb{R}^D$,
+so an ambient density and score for $\Y_0$ may be ill-defined.
+\method{} resolves this by working at a fixed smoothing level $t$: we add Gaussian noise in the ambient space so that the corrupted
+variable $\Y_t$ has an everywhere-positive density and a well-defined score $\nabla_{\y_t}\log p_{\Y_t}(\y_t)$.
+Crucially, this smoothed score admits a posterior/mixture representation in terms of $h$ and the base distribution $\pi$, which we approximate with a finite
+set of latent ``anchors'' and then convert into a one-shot transport map.
+
+\paragraph{Ambient Gaussian perturbations.}
+We introduce a noise schedule $(\alpha_t,\sigma_t)_{t\in[0,1]}$ and define,
+for each $t$, a perturbed observation
+\begin{equation}
+\label{eq:ambient-forward}
+\Y_t = \alpha_t \Y_0 + \sigma_t \Z_t,
+\qquad \Z_t \sim \mathcal{N}(0, I_D).
+\end{equation}
+This construction defines a dimension-preserving Gaussian corruption of $\Y_0$ directly in the ambient space.
+It provides a probabilistic link between the distribution of $\Y_t$ in $\mathbb{R}^D$ and that of the
+clean data $\Y_0$, which may be supported on a $d$-dimensional manifold with $d \leq D$.
+We use only the marginal Gaussian corruption in \eqref{eq:ambient-forward}; no underlying SDE or diffusion dynamics are assumed.
+
+\subsection{Score matching and generator}
+\label{subsec:magnet-score}
+
+
+\method{} uses the perturbed data $\Y_t$ to define a score-matching objective that learns $h$ via $\nabla_{\y_t}\log p(\y_t)$ in the ambient space, linking the noisy observation $\Y_t$ to its clean counterpart $\Y_0 = h(\U)$. The noise level is controlled by $t$ through the schedule $(\alpha_t,\sigma_t)$.
+
+From \eqref{eq:ambient-forward} and $\Y_0=h(\U)$, the conditional density of $\Y_t$ given $\U=\bm u$ is
+\[
+p_t(\y_t\mid \bm u)=\phi\!\left(\y_t;\alpha_t h(\bm u),\sigma_t^2 I_D\right),
+\]
+where $\phi(\y;\bm m,\bm\Sigma)$ denotes the density of $\mathcal N(\bm m,\bm\Sigma)$ and $\pi$ is the base density of $\U$.
+The marginal density of $\Y_t$ is the continuous mixture
+\[
+p_t(\y_t)=\int \phi\!\left(\y_t;\alpha_t h(\bm u),\sigma_t^2 I_D\right)\,\pi(\bm u)\,\mathrm{d}\bm u.
+\]
+Differentiating $\log p_t(\y_t)$ yields the mixture score
+\begin{align}
+\label{eq:mixture-score}
+\nabla_{\y_t}\log p_t(\y_t)
+&=
+\mathbb{E}\!\left[
+\nabla_{\y_t}\log p_t(\y_t\mid \U)\mid \Y_t=\y_t
+\right]
+=
+\frac{1}{\sigma_t^2}\Bigl(\alpha_t\,\mathbb E[h(\U)\mid \Y_t=\y_t] - \y_t\Bigr),
+\end{align}
+where $\nabla_{\y_t}\log p_t(\y_t\mid u)=-(\y_t-\alpha_t h(\bm u))/\sigma_t^2$ and the conditional expectation is under $p(\bm u\mid \y_t)\propto \pi(u)\,p_t(\y_t\mid \bm u)$.
+This identity highlights that the mixture score depends on the posterior mean 
+$\mathbb E[h(\U)\mid \y_t]$, which encodes the geometry of the latent space and the generator $h$.
+
+\noindent\textbf{Transport-based score estimator.} In \eqref{eq:mixture-score},  score estimation at noise level 
+$t$ requires computing the posterior mean $\mathbb E[h(\U)\mid \y_t]$ under
+$p(\bm u\mid \y_t)\ \propto\ \pi(\bm u)\,\phi\bigl(\y_t;\alpha_t h(\bm u),\sigma_t^2 I_D\bigr)$.
+We approximate this conditional expectation $\mathbb E[h(\U)\mid \y_t]$ using \emph{self-normalized importance sampling}. Specifically, let $\tilde\pi(\cdot\mid \y_t)$ be a proposal distribution on the latent space, possibly depending on $\y_t$. We draw
+$\U^{(1)},\dots,\U^{(K)}\stackrel{\text{i.i.d.}}{\sim}\tilde\pi(\cdot\mid \y_t)$, and form the unnormalized importance weights
+\begin{equation}
+\label{eq:is-weights}
+\omega_t^{(j)}(\y_t)
+\;:=\;
+\frac{\pi\bigl(\U^{(j)}\bigr)}{\tilde\pi\bigl(\U^{(j)}\mid \y_t\bigr)}
+\;\phi\!\left(\y_t;\alpha_t h\!\left(\U^{(j)}\right),\sigma_t^2 \bm{I}_D\right).
+\end{equation}
+Then, the posterior mean $\mathbb E[h(\U)\mid \y_t]$ is approximated by
+$\widetilde m_{t,K}(\y_t)
+\;:=\;
+\frac{\sum_{j=1}^K \omega_t^{(j)}(\y_t)\,h(\U^{(j)})}{\sum_{j=1}^K \omega_t^{(j)}(\y_t)}$,
+and we define the corresponding transport-based score estimator
+\begin{align}
+\label{eq:score-estimator}
+\widetilde s_{t,K}(\y_t;h,\pi,\tilde\pi)
+\;:=\;
+\frac{1}{\sigma_t^2}\Bigl(\alpha_t\,\widetilde m_{t,K}(\y_t)-\y_t\Bigr).
+\end{align}
+When $\tilde\pi(\cdot\mid \y_t)\equiv \pi(\cdot)$ (i.e., we sample anchors from the generative base), the importance ratio cancels and
+$\omega_t^{(j)}(\y_t)\propto \phi\!\left(\y_t;\alpha_t h(\U^{(j)}),\sigma_t^2 \bm{I}_D\right)$, recovering the finite-mixture form.
+This estimator is ``transport-based'' because it is an explicit functional of the learned map $h$ and the base distribution, with the conditional
+expectation in~\eqref{eq:mixture-score} approximated by a weighted set of anchors $\{\U^{(j)}\}_{j=1}^K$.
+
+\paragraph{Choice of proposal distribution $\tilde\pi$.}
+The base distribution $\pi$ specifies the generative model: draw $\U \sim \pi$ and set $\Y_0 = h(\U)$. The proposal $\tilde\pi$ in~\eqref{eq:is-weights} is purely a \emph{computational device} for approximating $\mathbb E[h(\U)\mid \y_t]$:
+as long as $\tilde\pi(\cdot\mid \y_t)$ has support covering the high-density regions of the posterior and the importance ratio
+$\pi/\tilde\pi$ is included, the estimator in~\eqref{eq:score-estimator} is consistent (and asymptotically unbiased) for the true posterior mean.
+
+For small $\sigma_t$ (or for expressive $h$ in high ambient dimension), the latent posterior
+\(
+p(\bm u\mid \y_t)\propto \pi(\bm u)\phi(\y_t;\alpha_t h(\bm u),\sigma_t^2 I_D)
+\)
+can be sharply concentrated: only a tiny subset of latent points produces $\alpha_t h(\bm u)$ close to the observed $\y_t$.
+If we draw anchors from the prior $\pi$, most samples receive negligible likelihood weight, leading to a low effective sample size and
+a high-variance estimate of $\mathbb E[h(\U)\mid \y_t]$ (and therefore of the score).
+A proposal $\tilde\pi(\cdot\mid \y_t)$ that better matches the posterior geometry yields more balanced weights, improving numerical stability and
+reducing Monte Carlo variance without changing the underlying model.
+
+Section~\ref{sec:mcapprox} presents practical choices that plug directly into~\eqref{eq:is-weights}--\eqref{eq:score-estimator}:
+(i) MAGT-MC uses $\tilde\pi=\pi$ (baseline sampling); (ii) MAGT-QMC replaces i.i.d.\ draws from $\pi$ with
+low-discrepancy point sets to reduce integration error; and (iii) MAGT-MAP uses a data-dependent Gaussian proposal
+$\tilde\pi(\cdot\mid \y_t)=q(\cdot\mid \y_t)$ obtained from a MAP--Laplace approximation to the posterior.
+All three choices estimate the same quantity $\mathbb E[h(\bm U)\mid \y_t]$; they differ only in how efficiently they approximate it.
+
+\paragraph{Training loss.}
+Given the transport-based score estimator~\eqref{eq:score-estimator}, we estimate the transport map $h$ by minimizing a single-level denoising score-matching objective. Specifically, for each training sample $\y_0^{\,i}\sim p_{\Y_0}$, we draw $\z^{\,i}\sim\mathcal{N}(0,I_D)$ and construct the perturbed observation
+$\y_t^{\,i}=\alpha_t \y_0^{\,i}+\sigma_t \z^{\,i}$.
+\begin{equation}
+\label{eq:ellK-def}
+\ell_K(\y_t,\y_0;h)
+:=
+\Bigl\|
+  \widetilde s_{t,K}(\y_t;h,\pi,\tilde\pi)
+  - \nabla_{\y_t} \log p(\y_t\mid \y_0)
+\Bigr\|_2^2,
+\end{equation}
+where $p(\y_t\mid \y_0)$ is the normal density for $\mathcal{N}(\alpha_t\y_0,\sigma_t^2 I_D)$. Given $(\y^i_t,\y^i_0)_{i=1}^n$, 
+we then solve the empirical risk minimization problem
+\begin{equation}
+\label{risk-minimization}
+L_{n,K}(h)
+:=
+\frac{1}{n}\sum_{i=1}^n \ell_K\!\bigl(\y_t^{\,i},\y_0^{\,i};h\bigr),
+\qquad
+\hat h_{\lambda}\in\arg\min_{h\in\mathcal{H}} L_{n,K}(h),
+\end{equation}
+over a prescribed hypothesis class $\mathcal{H}$ (e.g., ReLU neural networks).
+When $\mathcal{H}$ is instantiated by a neural network family $\{h_{\theta}:\theta\in\Theta\}$, we equivalently optimize over parameters $\theta$ and obtain
+$\hat\theta_{\lambda}\in\arg\min_{\theta\in\Theta} L_{n,K}(h_{\theta})$, with the learned transport defined as $\hat h_{\lambda}:=h_{\hat\theta_{\lambda}}$.
+(We suppress the dependence on $\hat\theta_{\lambda}$ in the theory and write $\hat h_{\lambda}$ for the learned function.)
+Here $\lambda := (t,d,K)$ collects the tuning parameters: $(t,d)$ govern the
+bias--variance trade-off of the estimator, while $K$ controls the accuracy of the
+Monte Carlo approximation used in $\ell_K$.
+The tuning parameter $\hat\lambda=(\hat t,\hat d,\hat K)$ is selected by cross-validation: we choose $\lambda$ to minimize a validation generative criterion (e.g., an estimated Wasserstein distance) computed on an independent validation set, and we report the resulting generator $\hat h_{\hat\lambda}$.
+
+
+
+At the population level, the conditional-score target is unbiased for the marginal score at time $t$ because
+$\E[\nabla_{\Y_t}\log p(\Y_t\mid \Y_0)\mid \Y_t]=\nabla_{\Y_t}\log p_{\Y_t}(\Y_t)$.
+This identity motivates the denoising score-matching objective in \eqref{risk-minimization}; the theory in Section~\ref{sec:mcapprox} makes the dependence on the finite-anchor 
+approximation explicit.
+
+\noindent\textbf{Sample generation.}
+Given the selected generator $\hat h_{\hat\lambda}$, we generate new samples by drawing
+$\bm u \sim \pi$ and pushing it forward through the learned transport,
+$\tilde{\y}_0 \;=\; \hat h_{\hat\lambda}(\bm u)$,
+where $\hat\lambda$ is selected via cross-validation.
+Thus, $\hat h_{\hat\lambda}$ provides a one-pass sampler for the target distribution and, together with the anchor bank, defines the transport-based score estimator in~\eqref{eq:score-estimator}.
+
+\paragraph{Intrinsic density and likelihood evaluation.}
+Assume $h:\mathbb{R}^{d}\to\mathbb{R}^D$ is $C^1$ and has rank $d$ almost everywhere, and let $\M:=h(\mathcal{U})$ denote its image over a latent domain $\mathcal{U}\subset\mathbb{R}^{d}$ that contains the support of $\pi$.
+Assume further that $\pi$ admits a density on $\mathcal{U}$ with respect to Lebesgue measure.
+By the classical area formula, the pushforward measure $h_{\#}\pi$ is absolutely continuous with respect to the $d$-dimensional Hausdorff measure $\mathcal H^{d}$ restricted to~$\M$, and for $\mathcal H^{d}$-a.e.\ $\y_0\in\M$,
+\begin{equation}
+\label{eq:manifold-likelihood}
+p_\M(\y_0)\;=\;\sum_{\bm u\in h^{-1}(\{\y_0\})} \frac{\pi(\bm u)}{\;\bigl|J_h(\bm u)\bigr|}\,,
+\qquad \text{where}\quad \bigl|J_h(\bm u)\bigr|
+\;=\; \sqrt{\det\!\bigl(\,J_h(u)^\top J_h(\bm u)\,\bigr)}.
+\end{equation}
+Here $p_\M$ is the intrinsic density of $\Y_0=h(\U)$ with respect to $\mathcal H^d|_{\M}$, $J_h(\bm u)\in\mathbb{R}^{D\times d}$ is the Jacobian, and $|J_h(\bm u)|$ is the $d$-dimensional Jacobian determinant.
+
+If $h$ is injective on $\mathcal U$ (e.g., a $C^1$ embedding), then $h^{-1}(\{\y_0\})$ is a singleton for $\mathcal H^d$-a.e.\ $\y_0\in\M$, and \eqref{eq:manifold-likelihood} reduces to the familiar chart formula
+\begin{equation}
+\label{eq:manifold-ll}
+\log p_\M\bigl(h(\bm u)\bigr)
+\;=\;
+\log \pi(\bm u)\;-\;\tfrac{1}{2}\log\det\!\bigl(J_h(\bm u)^\top J_h(\bm u)\bigr).
+\end{equation}
+More generally, if $h$ has bounded multiplicity, the sum in \eqref{eq:manifold-likelihood} contains finitely many terms; evaluating $p_\M(\y_0)$ requires identifying and summing all contributing preimages.
+Equation~\eqref{eq:manifold-ll} gives the branchwise chart contribution associated with a specific preimage $u$.
+For generated samples $\y_0=h(\bm u)$, this branchwise log-density is directly computable from $(\bm u,h(\bm u))$ and coincides with $\log p_\M(\y_0)$ whenever the fiber is a singleton (in particular, under injectivity).
+If $h$ is not injective and additional preimages exist, \eqref{eq:manifold-ll} should be interpreted as a local contribution unless the remaining preimages are recovered and included in \eqref{eq:manifold-likelihood}.
+For an observed point $\y_0\in\M$, evaluating $p_\M(\y_0)$ requires identifying one or more latent preimages solving $h(\bm u)=\y_0$ (or approximately minimizing $\|h(\bm u)-\y_0\|_2$); this can be done via a separate encoder or numerical optimization when needed, but is not required for sampling.
+
+Finally, note that an ambient-space density for $\Y_0$ does not exist when its law is supported on a manifold; at any fixed smoothing level $t>0$ with $\sigma_t>0$, however, the corrupted law admits the mixture representation
+\(
+p_{\Y_t}(\y)=\int \phi\!\left(\y;\alpha_t h(\bm u),\sigma_t^2 I_D\right)\pi(\bm u)\,d \bm u,
+\)
+which can be estimated using the same anchor bank employed for score approximation.
+
+
+\subsection{Comparisons with diffusion and flow models}
+\label{sec:comparison}
+
+This section evaluates {\method{}} against diffusion- and flow-based baselines across several practical dimensions, including sampling cost, support alignment, likelihood accessibility, computational footprint, and statistical guarantees. As shown in Sections~\ref{subsec:dim}--\ref{subsec:magnet-score}, the fixed-$t$ training scheme in \method{} yields an ambient-space mixture representation of $\Y_t$ (so the smoothed density at level $t$ is MC-estimable) and induces an intrinsic density on the learned manifold. This combination bridges flow-style density evaluation on the support with the computational efficiency of one-shot sampling.
+
+
+Table \ref{tab:summary} highlights that \method{} combines one-shot sampling, support alignment to a thin manifold, and intrinsic densities on the learned support, together with a Monte Carlo route to smoothed ambient likelihoods at the training noise level.
+
+\paragraph{Sampling cost.}
+\method{} generates samples in a single forward evaluation of the transport map $h$, as in flow models.
+Diffusion models, by contrast, generate samples by numerically integrating a reverse-time stochastic differential equation (SDE) or ordinary differential equation (ODE) through sequential denoising steps, often requiring tens to thousands of neural network evaluations per sample, making them substantially slower without distillation \citep{lu2022dpmsolver,karras2022edm}.
+Moreover, because this model relies on time discretization, reducing the number of steps increases the discretization (solver) error, which vanishes only as the sequential denoising steps increase, or higher-order solvers are used \citep{chen2023improved,zheng2023dpmv3}.
+This makes \method{} attractive for interactive or streaming use without distillation.
+
+\begin{table}[t]
+\centering
+\caption{Comparison of \method{} with diffusion models and normalizing flows. \method{} achieves strong manifold alignment and high fidelity with single-pass sampling, avoiding diffusion's long chains and flow invertibility. NFE denotes the number of function evaluations during sampling.}
+\label{tab:summary}
+\footnotesize
+\setlength{\tabcolsep}{4pt}% tighten column spacing to avoid overfull boxes
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}p{0.18\linewidth} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
+\toprule
+& \textbf{\method{}} & \textbf{Diffusion/Flow-matching} & \textbf{Normalizing flows} \\
+\midrule
+Training & Matching loss at fixed $t$ & Time-avg.\ loss over $t$ & MLE via change of vars \\
+Sampling cost & One forward pass (NFE$=1$) & NFE steps (NFE$\!\gg\!1$) & One inverse pass \\
+Support & Manifold via fixed-$t$ smoothing & Near-manifold leakage & No measure-$0$ manifolds \\
+Architecture & Non-invertible; dimensions may differ & Unconstrained & Invertible; dimensions must match \\
+Likelihood & Intrinsic density on manifold via area formula (exact for embeddings; otherwise requires summing preimages); smoothed ambient density via anchor MC & Unnormalized; no tractable likelihood & Exact (ambient) \\
+Failures & $t$ mis-specification & Boundary bias; high cost & Invertibility bottleneck; manifold mismatch \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\paragraph{Support alignment.} \method{} trains at a fixed smoothing level $t$, concentrating probability mass near the data manifold and avoiding the boundary bias that arises from averaging across noise scales in diffusion. Its finite-mixture approximation further emphasizes anchors that best explain each observation while down-weighting off-manifold ones for improving boundary fidelity.
+This aspect is confirmed by the experiment in Section \ref{sec:experiments}.
+
+\paragraph{Likelihoods on the support and at fixed smoothing.}
+\method{} induces an intrinsic density on its image manifold via the area formula \eqref{eq:manifold-likelihood}--\eqref{eq:manifold-ll}. In particular, for generated samples $\y_0=h(\bm u)$ one can evaluate $\log p_{\M}(\y_0)$ in closed form from $(\bm u,J_h(\bm u))$ when $h$ is locally injective.
+An ambient-space likelihood for $\Y_0$ is not defined when the target law is manifold-supported; however, at the fixed smoothing level $t>0$, the corrupted law has density
+\(p_{\Y_t}(\y)=\int \phi\!\left(\y;\alpha_t h(\bm u),\sigma_t^2 I_D\right)\pi(\bm u)\,d\bm u\),
+which can be approximated by the same anchor bank used for score estimation.
+
+\paragraph{Computational footprint and architectural freedom.}
+Because $h$ need not be invertible and the latent and data dimensions may differ, \method{} avoids the $D \times D$ Jacobian log-determinants and the coupling or triangular constraints that are standard in invertible architectures, particularly normalizing flows. This architectural freedom reduces training overhead and facilitates scaling to high-dimensional embeddings. Importantly, neither training nor inference requires taking the limit $t \!\to\! 0$; this contrasts with many diffusion-based objectives, where score magnitudes can diverge as the noise level vanishes and may destabilize optimization.
+
+\paragraph{Statistical guarantees.} Our non-asymptotic risk analysis depends on the intrinsic dimension $d$ and geometric regularity of the manifold, rather than the ambient dimension $D$. This clarifies why \method{} remains data-efficient when observations are high-dimensional but effectively low-dimensional in geometry.
+
+
+
+
+\section{Theory: excess risk and generation fidelity}\label{sec:risk}
+
+  This section establishes a finite-sample bound for the one-shot generation accuracy of
+$\hat h_{\lambda}(\U)$ with $\U\sim\pi$ independent, measured by the $2$-Wasserstein error
+$W_2(P_{\Y},P_{\tilde \Y})$ with $\tilde \Y=\hat h_{\lambda}(\U)$ estimated at a noise level $t\in(0,1)$.
+The analysis decomposes into two ingredients.
+First, Theorem~\ref{thm:vp-tau-linear} (a pull-back inequality) converts a single-level
+score mismatch between the smoothed laws at level $t$ into a bound on $W_2$ at $t=0$.
+Second, Theorem~\ref{thm:score-matching} controls the fixed-$t$ score-matching excess risk of the
+empirical minimizer $\hat h_{\lambda}$ of~\eqref{risk-minimization} via bracketing entropy.
+This result is an adaptation to our setting of classical bracketing-entropy arguments for
+(generalized) $M$-estimators, as in~\cite{shen1994convergence}.
+Combining these two ingredients yields the generation-fidelity bound in
+Theorem~\ref{thm:acc}. To the best of our knowledge, both the pull-back inequality in
+Theorem~\ref{thm:vp-tau-linear} and the resulting generation-fidelity bound in
+Theorem~\ref{thm:acc} are new.
+
+\subsection{Setup and geometric assumptions}
+
+Let $\mathcal{U}\subset\mathbb{R}^{d}$ be a bounded latent domain and let $\pi$ denote a base \emph{density} on $\mathcal{U}$ with respect to Lebesgue measure.
+We consider a manifold-supported data distribution that is \emph{well specified} by an (unknown) transport map
+$h^*:\mathcal U\to\mathbb R^D$ with sufficient smoothness to define a regular $d$-dimensional image manifold
+(precise regularity is stated in Assumption~\ref{G1}).
+Define the target manifold
+\[
+\mathcal{M}^* \;:=\; h^*(\supp \pi)\subset\mathbb{R}^{D},
+\]
+where $\supp$ denotes support.
+
+Throughout, $\|\cdot\|$ denotes the Euclidean norm and $\|A\|_{\mathrm{op}}:=\sup_{\|x\|=1}\|Ax\|$ denotes the operator norm.
+
+We impose the following regularity and geometric conditions.
+\begin{definition}[H\"older class]\label{def:holder}
+For $s>0$, a bounded set $\mathcal U\subset\R^{d}$, and a radius $B>0$, we write
+$\mathcal C^{s}(\mathcal U,B)$ for the (vector-valued) H\"older ball of order $s$:
+the set of functions $h:\mathcal U\to\R^D$ whose derivatives up to order $\lfloor s\rfloor$ exist and are bounded,
+and whose $\lfloor s\rfloor$-th derivative is $(s-\lfloor s\rfloor)$-H\"older with H\"older seminorm at most $B$.
+In particular, when $s\in(0,1]$ this reduces to the condition
+$\|h(\bm u)-h(\bm v)\|_2\le B\|\bm u-\bm v\|^{s}$ for all $\bm u,\bm v\in\mathcal U$, together with $\sup_{\bm u\in\mathcal U}\|h(\bm u)\|_2\le B$.
+\end{definition}
+
+\begin{definition}[Reach and tubular neighborhood]\label{def:reach}
+For a closed set $\mathcal M\subset\R^D$, its reach $\reach(\mathcal M)\in[0,\infty]$ is the largest $r$ such that
+every point $x$ with $\dist(x,\mathcal M)<r$ has a unique nearest-point projection $\Pi_{\mathcal M}(x)\in\mathcal M$.
+Equivalently, the open tube $\mathcal T_r(\mathcal M):=\{x\in\R^D:\dist(x,\mathcal M)<r\}$ admits a well-defined projection map
+$x\mapsto \Pi_{\mathcal M}(x)$.
+\end{definition}
+
+\begin{assumption}[Regular transport class]\label{G1}
+The true transport $h^*$ lies in the H\"older smooth class $\mathcal{C}^{\eta+1}(\mathcal{U},B)$ over a bounded latent domain $\mathcal{U}\subset\mathbb{R}^{d^*}$.
+Set $\gamma:=\min(1,\eta)$.
+There exist constants $0<m\le M<\infty$ and $H_\gamma<\infty$, and a regular subset $\mathcal{H}_{\mathrm{reg}}\subseteq\mathcal{H}$ with $h^*\in\mathcal{H}_{\mathrm{reg}}$, such that the following hold for every $h\in\mathcal{H}_{\mathrm{reg}}$:
+\begin{enumerate}
+\item[(i)] (Full rank and conditioning) The Jacobian $J_h(\bm u)\in\mathbb{R}^{D\times d}$ has rank $d$ for all $\bm u\in\mathcal{U}$ and its singular values lie in $[m,M]$.
+\item[(ii)] ($C^{1,\gamma}$ regularity) $J_h$ is $\gamma$--H\"older with constant $H_\gamma$, i.e.,
+$\|J_h(\bm u)-J_h(\bm v)\|_{\mathrm{op}}\le H_\gamma \|\bm u-\bm v\|^\gamma$ for all $\bm u,\bm v\in\mathcal{U}$.
+\end{enumerate}
+In the theoretical results below, we assume the learned estimator $\hat h_{\lambda}$ belongs to $\mathcal{H}_{\mathrm{reg}}$; see Remark~\ref{rem:assumptions-local} for discussion.
+\end{assumption}
+
+\begin{assumption}[Positive reach]\label{G2}
+There exists a constant $\rho_{\M}>0$ such that the image manifold $\mathcal{M}^*:=h^*(\supp\pi)$ has reach at least $\rho_{\M}$.
+Moreover, every $h\in\mathcal{H}_{\mathrm{reg}}$ has an image manifold $h(\supp\pi)$ with reach at least $\rho_{\M}$.
+\end{assumption}
+
+\begin{remark}\label{rem:assumptions-local}
+Assumptions~\ref{G1}--\ref{G2} impose uniform chart regularity (full-rank, well-conditioned Jacobians) and a positive reach in order to control tubular neighborhoods and justify the Hessian bounds that underlie the single-level pull-back analysis in Section~\ref{sec:risk}.
+They are stated as uniform conditions over the restricted set $\mathcal{H}_{\mathrm{reg}}$, but they can be localized: both the smallest singular value of $J_h$ and the reach of $h(\supp\pi)$ are stable under sufficiently small $C^1$ perturbations of $h$ on the bounded domain $\mathcal U$.
+Consequently, it is enough for the estimator $\hat h_{\lambda}$ to lie in a $C^1$ neighborhood of $h^*$, which is consistent with the excess-risk control for large $n$.
+In practice, one can encourage membership in $\mathcal{H}_{\mathrm{reg}}$ via Jacobian-conditioning penalties (e.g., penalizing $\|J_h(u)^\top J_h(u)-I_d\|$ over sampled $u$), spectral normalization, and post hoc checks on a dense latent grid.
+\end{remark}
+
+\begin{definition}[Log--Sobolev constant]\label{def:lsi}
+Let $\mu$ be a positive density with respect to the Lebesgue measure. For $g\ge 0$ with $\int g\,d\mu<\infty$, define
+the entropy function as 
+\[
+\Ent_{\mu}(g)
+\;:=\;
+\int g\log\!\Bigl(\frac{g}{\int g\,d\mu}\Bigr)\,d\mu
+\]
+We say that $\mu$ satisfies a logarithmic Sobolev inequality (LSI) with constant $C_{\mathrm{LSI}}(\mu)>0$ if
+\[
+\Ent_{\mu}(f^2)
+\;\le\;
+\frac{2}{C_{\mathrm{LSI}}(\mu)}\int \|\nabla f\|_2^2\,d\mu
+\qquad\text{for all smooth }f\not\equiv\mathrm{const}.
+\]
+Equivalently,
+$C_{\mathrm{LSI}}(\mu)
+\;:=\;
+\inf_{f\not\equiv\mathrm{const}}
+\frac{2\int \|\nabla f(x)\|_2^2\,\mu(x)\,dx}{\Ent_{\mu}(f^2)}$.
+\end{definition}
+
+\begin{assumption}[Smooth base density]\label{G3}
+The base density $\pi$ is $C^{2}$ on $\mathcal{U}$ and its log-density has bounded Hessian:
+$\Lambda_2 := \sup_{\bm u\in\mathcal{U}}\bigl\|\nabla_{\bm u}^2\log \pi(\bm u)\bigr\|_{\mathrm{op}} < \infty$.
+Moreover, the latent density $\pi$ satisfies a log--Sobolev inequality with constant $C_{\mathrm{LSI}}(\pi)>0$.
+\end{assumption}
+
+Under Assumptions~\ref{G1}--\ref{G3}, we assume, for simplicity, that both $\U$ and $\Y_0$ have bounded support. In fact, this assumption can be relaxed to a uniform tail-control condition (e.g., sub-Gaussian tails), with only minor modifications to the proof.
+
+
+
+\subsection{From a single-level score error to \texorpdfstring{$W_2$}{W2} generation error}
+
+Consider the variance-preserving (VP) schedule $\sigma_t^2=t$ and $\alpha_t=\sqrt{1-t}$ for a fixed $t\in(0,1)$ in \eqref{eq:ambient-forward}.
+Define the smoothed variables
+\[
+\Y_t := \alpha_t \Y_0 + \sigma_t \Z,\qquad
+\tilde{\Y}_t := \alpha_t \tilde{\Y}_0 + \sigma_t \Z,
+\qquad \Z\sim\mathcal{N}(0,\bm{I}_D),
+\]
+where $\Z$ is independent of $\Y_0$ and of $\tilde{\Y}_0=\hat h_{\lambda}(\U)$.
+Let $p_t$ denote the density of $\Y_t$ and let $\tilde p_t$ denote the density of $\tilde{\Y}_t$; both are smooth and everywhere positive for $t>0$.
+
+We measure the single-level mismatch by the squared error between the two denoisers (posterior means) under Gaussian corruption:
+\begin{equation}
+\label{eq:Emag-def}
+E_{\mathrm{MAG}}(t)
+\;:=\;
+\E_{Y\sim p_t}\bigl\|m_{p,t}(\Y)-m_{\tilde p,t}(\Y)\bigr\|_2^2,
+\end{equation}
+where $m_{p,t}(\y):=\E[\Y_0\mid \Y_t=\y]$ and
+$m_{\tilde p,t}(\y):=\E[\tilde{\Y}_0\mid \tilde{\Y}_t=\y]$.
+For Gaussian corruption, Tweedie's formula gives
+\[
+m_{p,t}(y)=\frac{\y+t\nabla\log p_t(\y)}{\alpha_t},
+\qquad
+m_{\tilde p,t}(\y)=\frac{\y+t\nabla\log \tilde p_t(\y)}{\alpha_t},
+\]
+and therefore
+\[
+E_{\mathrm{MAG}}(t)
+=
+\frac{t^2}{1-t}\,
+\E_{\Y\sim p_t}\bigl\|\nabla\log p_t(\Y)-\nabla\log \tilde p_t(\Y)\bigr\|_2^2.
+\]
+In particular, the expectation on the right is the squared Fisher divergence $\mathcal{J}(p_t\|\tilde p_t)$ (up to convention). Recall that for positive densities $q$ and $p$ on $\R^D$, the (relative) Fisher divergence is
+\[
+\mathcal{J}(q\|p)
+:=
+\int_{\R^D}\bigl\|\nabla\log q(\y)-\nabla\log p(\y)\bigr\|_2^2\,q(\y)\,\dd \y,
+\]
+see, e.g.,~\cite{shen1997sieves}.
+
+Theorem~\ref{thm:vp-tau-linear} shows that controlling $E_{\mathrm{MAG}}(t)$ at a single noise level $t>0$
+controls the one-shot $W_2$ generation error.
+
+
+\begin{theorem}[Single-level pull-back bound]\label{thm:vp-tau-linear}
+Under Assumptions~\ref{G1}--\ref{G3}, suppose the VP noise level $t\in(0,1)$ lies in the tube regime
+$t\le t_{\max}:=c_{\mathrm{tube}}^2\,\rho_{\M}^2,
+\theta_t:=\frac{C_N^{(\gamma)}\,t^\gamma}{(1-t)^\gamma}<1
+$.
+Then the one-shot generation error is controlled by the single-level mismatch:
+\begin{equation}\label{eq:w2-main-bound-linear}
+W_2\bigl(P_{\Y_0},P_{\tilde \Y_0}\bigr)
+\;\le\;
+C_{\mathrm{PB}}(t)\,\sqrt{E_{\mathrm{MAG}}(t)},
+\end{equation}
+where the pull-back constant is
+\[
+C_{\mathrm{PB}}(t)
+:=
+\frac{\sqrt{1-t}}{t}\Bigl(\Phi(t)\,\bar C_{\mathrm{LSI}}(t)+\Psi(t)\Bigr),
+\qquad
+\bar C_{\mathrm{LSI}}(t):=
+\frac{(1-t)M^2+t}{\min\{C_{\mathrm{LSI}}(\pi),\,1\}}.
+\]
+Here,
+\[
+\Phi(t):=\frac{\exp\!\big(I_\gamma(t)\big)}{\sqrt{1-t}},
+\qquad
+\Psi(t):=\Gamma(t)\,\frac{\exp\!\big(4I_\gamma(t)\big)}{\sqrt{1-t}},
+\qquad
+\Gamma(t):=-\log(1-t),
+\]
+with
+\[
+I_\gamma(t):=\frac{2}{\gamma}C_T^{(\gamma)}\frac{t^{\gamma/2}}{(1-t)^{1+\gamma/2}}+\frac{1}{\gamma}\frac{(C_S^{(\gamma)})^2}{1-\theta_t}\frac{t^\gamma}{(1-t)^{1+\gamma}}.
+\]
+The constants $C_T^{(\gamma)}$, $C_S^{(\gamma)}$, and $C_N^{(\gamma)}$ depend solely on the parameters $(m, M, H_\gamma, \Lambda_2, \rho_{\mathcal{M}})$.
+
+Moreover, for fixed problem constants and $t\le t_{\max}$, the dominant scaling is
+\[
+C_{\mathrm{PB}}(t)=O(t^{-1})\quad\text{as }t\downarrow 0,
+\qquad\text{and}\qquad
+C_{\mathrm{PB}}(t)=O(1)\quad\text{if }t\text{ is bounded away from }0.
+\]
+\end{theorem}
+
+
+
+
+
+Theorem~\ref{thm:vp-tau-linear} provides a single-level bound on 
+\( W_2\bigl(P_{\Y_0}, P_{\tilde{\Y}_0}\bigr) \) based on the score mismatch at a fixed noise level 
+\( 0 < t < t_{\max} \), in contrast to diffusion analyses that integrate score errors over time. 
+The result highlights a bias--stability trade-off in the choice of \( t \): larger \( t \) yields smoother 
+densities and more stable score estimation, but incurs greater smoothing bias, while smaller \( t \) reduces 
+bias at the cost of more concentrated posteriors and higher Monte Carlo variance. 
+Practical strategies for mitigating Monte Carlo error at small \( t \) are discussed in 
+Section~\ref{sec:mcapprox}.
+
+\subsection{Learning the single-level score by empirical risk minimization}
+To connect Theorem~\ref{thm:vp-tau-linear} to the training objective, we make explicit the roles of (i) the finite-anchor approximation and (ii) the underlying population score-matching risk.
+Recall the finite-anchor loss $\ell_K$ in~\eqref{eq:ellK-def} and the empirical objective
+\[
+L_{n,K}(h)
+:=\frac{1}{n}\sum_{i=1}^n \ell_K(\y_t^{\,i},\y_0^{\,i};h),
+\qquad
+\hat h_{\lambda}\in\arg\min_{h\in\mathcal{H}} L_{n,K}(h),
+\]
+as in~\eqref{risk-minimization}.
+
+\paragraph{Ideal (infinite-anchor) risk.}
+For the statistical analysis, it is convenient to introduce the ideal (infinite-anchor) loss
+\begin{equation}
+\label{eq:ell-def}
+\ell(\y_t,\y_0;h)
+:=
+\bigl\| s_t(\y_t;h)-\nabla_{\y_t}\log p(\y_t\mid \y_0)\bigr\|_2^2,
+\end{equation}
+where $s_t(\cdot;h):=\nabla\log p_t^{h}(\cdot)$ is the score of the smoothed model induced by $h$, and
+$p_t^{h}$ denotes the density of
+\(
+\Y_t^{h}:=\alpha_t h(\U)+\sigma_t Z
+\)
+with $\U\sim\pi$ and $\bm Z\sim\mathcal N(0,\bm{I}_D)$.
+The corresponding population risk is
+\[
+R(h):=\E\big[\ell(\Y_t,\Y_0;h)\big],
+\]
+where $(\Y_t,\Y_0)$ follow the data corruption model~\eqref{eq:ambient-forward} with $\Y_0=h^*(U)$ and $U\sim\pi$.
+
+Define the excess population risk relative to the ground-truth map $h^*$ by
+\begin{equation}
+\label{eq:excess-risk}
+\rho^2(h^*,h)
+:=
+R(h)-R(h^*)
+\;\ge\;0,
+\qquad
+\rho(h^*,h):=\sqrt{\rho^2(h^*,h)}.
+\end{equation}
+If $h^*\notin\mathcal H$, the approximation error is $\inf_{h\in\mathcal H}\rho^2(h^*,h)$.
+
+\paragraph{From score-matching risk to Fisher divergence and $E_{\mathrm{MAG}}(t)$.}
+Let $p_t$ denote the smoothed \emph{data} density of $\Y_t=\alpha_t\Y_0+\sigma_t Z$ under $h^*$, and let $p_t^{h}$ be the smoothed density induced by a candidate transport $h$ as above.
+Write
+\[
+s_t(\cdot;h)=\nabla\log p_t^{h}(\cdot),
+\qquad
+s_t(\cdot;h^*)=\nabla\log p_t(\cdot).
+\]
+The conditional score target used for training satisfies the unbiasedness identity
+\[
+\E\!\big[\nabla_{\y_t}\log p(\Y_t\mid \Y_0)\,\big|\,\Y_t\big]
+=
+\nabla \log p_t(\Y_t),
+\]
+which yields the orthogonal decomposition
+\[
+R(h)
+=
+R(h^*)
++
+\E_{\Y\sim p_t}\bigl\| s_t(\Y;h)-s_t(\Y;h^*)\bigr\|_2^2.
+\]
+Consequently, the excess risk is a Fisher-divergence-type score mismatch measured under the smoothed data law:
+\begin{equation}
+\label{eq:excess-risk-fisher}
+\rho^2(h^*,h)
+=
+\E_{Y\sim p_t}\bigl\|\nabla\log p_t^{h}(\Y)-\nabla\log p_t(\Y)\bigr\|_2^2
+=
+\mathcal J\!\bigl(p_t\,\|\,p_t^{h}\bigr),
+\end{equation}
+
+Now specialize to the learned transport $\hat h_\lambda$ and denote $\tilde \Y_0:=\hat h_\lambda(U)$ and $\tilde p_t:=p_t^{\hat h_\lambda}$, so that $\tilde \Y_t=\alpha_t\tilde \Y_0+\sigma_t Z$ has density $\tilde p_t$.
+Under the VP schedule $\sigma_t^2=t$ and $\alpha_t=\sqrt{1-t}$, it implies that the denoiser mismatch in~\eqref{eq:Emag-def} satisfies
+\[
+E_{\mathrm{MAG}}(t)
+=
+\frac{t^2}{1-t}\,
+\E_{\Y\sim p_t}\bigl\|\nabla\log p_t(\Y)-\nabla\log \tilde p_t(\Y)\bigr\|_2^2
+=
+\frac{t^2}{1-t}\,\rho^2\!\bigl(h^*,\hat h_\lambda\bigr).
+\]
+
+\begin{corollary}[Training-to-$W_2$ pipeline]
+\label{cor:train-to-w2}
+Fix $t\in(0,1)$ in the tube regime of Theorem~\ref{thm:vp-tau-linear}.
+Let $\hat h_\lambda$ be the learned transport and $\tilde \Y_0=\hat h_\lambda(\U)$ its one-shot generator.
+Then
+\[
+W_2\bigl(P_{\Y_0},P_{\tilde \Y_0}\bigr)
+\le
+\bigl(\Phi(t)\,\bar C_{\mathrm{LSI}}(t)+\Psi(t)\bigr)\,
+\rho\!\bigl(h^*,\hat h_\lambda\bigr).
+\]
+\end{corollary}
+
+
+\paragraph{Bracketing entropy.}
+Let $P$ denote the joint law of $(\Y_t,\Y_0)$ under \eqref{eq:ambient-forward}.
+For a class of measurable functions $\mathcal{F}$ on the sample space and $u>0$, let
+$N_B(u,\mathcal{F},L_2(P))$ be the $u$-bracketing number in $L_2(P)$ and
+$H_B(u,\mathcal{F}):=\log N_B(u,\mathcal{F},L_2(P))$ its bracketing entropy \citep{shen1994convergence}.
+We apply this with the \emph{excess-loss} class
+\[
+\mathcal{F}
+:=
+\bigl\{\ell(\cdot,\cdot;h)-\ell(\cdot,\cdot;h^*):\ h\in\mathcal{H}\bigr\}.
+\]
+In \eqref{2approx} below, the generic variable $\x$ ranges over the sample space of $(\Y_t,\Y_0)$.
+
+
+Theorem \ref{thm:score-matching} bounds the excess risk of the empirical minimizer $\hat h_{\lambda}$ in terms of (i) approximation error,
+(ii) a bracketing-entropy integral, and (iii) the additional perturbation introduced by the finite-anchor loss $\ell_K$.
+
+
+\begin{theorem}[Score-matching excess-risk bound]
+\label{thm:score-matching}
+Fix any $k$ such that
+$0<\frac{c_b}{4c_v}\le k<1$, with $c_v=\frac{40\,\alpha_t^2\,B^2}{\sigma_t^4}$ and $c_b=\frac{16\,\alpha_t^2\,B^2}{\sigma_t^4}$.
+Let $\hat h_{\lambda}\in\arg\min_{h\in\mathcal{H}}L_{n,K}(h)$ be the empirical minimizer defined above.
+Then, for any $\varepsilon>0$ satisfying the entropy condition
+\begin{equation}
+\label{entropy}
+\int_{k\varepsilon^2/16}^{4 c^{1/2}_{v} \varepsilon}
+H_B^{1/2}(u,\mathcal{F})\, \dd u
+\leq c_{h} \, n^{1/2} \, \varepsilon^2,
+\end{equation}
+and the lower bound
+\begin{equation}
+\label{2approx}
+\varepsilon^2 \geq \max\!\Bigl\{4\inf_{h\in \mathcal{H}}\rho^2(h^*,h),\;8\sup_{h,\x}\big|\ell_K(\y_t,\y_0;h)-\ell(\y_t,\y_0;h)\big|\Bigr\},
+\end{equation}
+with $c_{h}=k^{3/2}/2^{11}$, we have the deviation bound
+\[
+\P\!\bigl(\rho(h^*,\hat h_{\lambda}) \geq \varepsilon\bigr)
+\leq 4 \exp\!\bigl(- c_e\, n\, \varepsilon^2\bigr),
+\qquad
+c_e :=\frac{1-k}{8(64c_v+\frac{2c_b}{3})}.
+\]
+\end{theorem}
+
+
+
+\subsection{Main result: finite-sample generation fidelity}
+
+Before stating the main result, we introduce several definitions.
+
+\noindent\textbf{Neural network class.}
+Fix integers $d_{\mathrm{in}},d_{\mathrm{out}}\ge 1$ and depth $L\ge 2$.
+A feedforward ReLU network $h:\R^{d_{\mathrm{in}}}\to\R^{d_{\mathrm{out}}}$ is defined by
+\[
+\x^{(0)}=\x,\qquad
+\x^{(\ell)}=\sigma\!\big(\bm{A}_\ell \bm{x}^{(\ell-1)}+\bm{b}_\ell\big)\ \ (\ell=1,\dots,L-1),\qquad
+h(\x)=\bm{A}_L \x^{(L-1)}+\bm{b}_L,
+\]
+where $\sigma(\bm z)=\max\{\bm{z},0\}$ is applied componentwise, $\bm A_\ell\in\R^{d_{\ell}\times d_{\ell-1}}$, and $\bm b_\ell\in\R^{d_\ell}$, with
+$d_0=d_{\mathrm{in}}$ and $d_L=d_{\mathrm{out}}$.
+The width is $\max_{0\le \ell\le L-1} d_\ell$.
+
+We write $\mathrm{NN}(d_{\mathrm{in}},d_{\mathrm{out}},L,W,S,B,E)$ for the class of such networks with
+maximum width at most $W$, at most $S$ nonzero parameters, entrywise parameter bound $E$, and output uniformly bounded by $B$ on the latent domain $\mathcal U$:
+\begin{align}
+\label{eq:NN-class}
+\mathrm{NN}(d_{\mathrm{in}},d_{\mathrm{out}},L,W,S,B,E)
+:=\Bigl\{h:\ 
+&\max_{0\le \ell\le L-1} d_\ell \le W,\ 
+\sum_{\ell=1}^{L}\bigl(\|\bm A_\ell\|_0+\|\bm b_\ell\|_0\bigr)\le S,\nonumber\\
+&\max_{\ell}\bigl(\|\bm A_\ell\|_{\max},\|\bm b_\ell\|_{\max}\bigr)\le E,\ 
+\sup_{\bm u\in\mathcal U}\|h(\bm u)\|_\infty \le B
+\Bigr\},
+\end{align}
+where $\|M\|_{\max}:=\max_{i,j}|M_{ij}|$ denotes the max-entry norm and $\|\cdot\|_0$ counts nonzeros.
+
+Assume that the finite-anchor approximation induces a uniform perturbation of the loss:
+\[
+\sup_{h\in\mathcal{H},\y_t,\y_0}\bigl|\ell_K(\y_t,\y_0;h)-\ell(\y_t,\y_0;h)\bigr|\le \varepsilon(\tilde{\pi},t,K),
+\]
+for some deterministic function $\varepsilon(\tilde{\pi},t,K)$ (see Section~\ref{sec:mcapprox} for explicit bounds).
+
+With these definitions in place, we obtain the following generation-accuracy guarantee by combining the pull-back inequality (Theorem~\ref{thm:vp-tau-linear}), the excess-risk bound (Theorem~\ref{thm:score-matching}), and standard approximation and entropy estimates for ReLU networks.
+
+\begin{theorem}[\textbf{MAGT's generation fidelity}]
+\label{thm:acc}
+Under Assumptions~\ref{G1}--\ref{G3} and the estimator class setting $\mathcal{H}=\mathrm{NN}(d,D,L,W,W^2L,B,B)$ with
+$d\ge d^*$, there exist constants $c_1,c_2,c_3>0$ (depending only on $(m,M,H_\gamma,\Lambda_2,\rho_{\M})$ and the VP schedule, but not on $n,W,L,K$) such that
+\begin{equation}
+\label{eq:main-W2-bound}
+\E\, W_2\!\bigl(P_{\Y_0},P_{\tilde\Y_0}\bigr)
+\;\le\;
+C_{\mathrm{PB}}(t)\left(
+c_1 (W L)^{-\frac{2(\eta+1)}{d^*}}
++ c_2\,\sigma_t^{-(\eta+2)}
+\Bigl(\frac{(W L)^2 \log^5(W L)}{n}\Bigr)^{\frac{\eta+1}{2\eta}}
++ c_3\, \varepsilon(\tilde{\pi},t,K)
+\right),
+\end{equation}
+where the expectation is over the training sample and any Monte Carlo randomness
+used to form the anchor-based score estimator.
+\end{theorem}
+
+\begin{corollary}[Explicit $n$--rate]\label{cor:explicit-n-rate-gamma}
+Under the assumptions of Theorem~\ref{thm:acc}, set
+\[
+\kappa:=\frac{d^*}{2(2\eta+d^*)},
+\qquad
+r:=\frac{\eta+1}{2\eta+d^*},
+\]
+and choose $(W,L)$ so that $WL=\Big\lceil\Bigl(\frac{n}{\log^5 n}\Bigr)^{\kappa}\Big\rceil$.
+Then, 
+\[
+\E\, W_2\!\bigl(P_{\Y_0},P_{\tilde\Y_0}\bigr)
+\;\le\;
+C_{\mathrm{PB}}(t)\left[
+\Bigl(c_1+c_2\,\sigma_t^{-(\eta+2)}\Bigr)
+\Bigl(\frac{n}{\log^5 n}\Bigr)^{-r}
+\;+\;
+c_3\,\varepsilon(\tilde{\pi},t,K)
+\right].
+\]
+where $\varepsilon(\tilde{\pi},t,K)\to 0$ as $K\to\infty$ for each fixed $t\in(0,1)$, with explicit $K$-dependent bounds in
+Section~\ref{sec:mcapprox}.
+\end{corollary}
+
+
+
+
+The exponent
+$
+\Bigl(\tfrac{n}{\log^5 n}\Bigr)^{-r}
+=\Bigl(\tfrac{n}{\log^5 n}\Bigr)^{-\frac{\eta+1}{2\eta+d^*}}
+$
+in Corollary~\ref{cor:explicit-n-rate-gamma} matches the intrinsic-dimension minimax scaling established for Wasserstein-risk estimation of $\eta$-regular distributions on a $d^*$-dimensional manifold; see, e.g.,~\citet{tang2024adaptivity} (up to polylogarithmic factors).
+
+\paragraph{Generation error bounds.}
+As summarized in Table~\ref{tab:theory-generative-summary}, the results listed there that achieve an \emph{intrinsic-dimension} Wasserstein rate scale as
+$n^{-(\eta+1)/(2\eta+d^*)}$. In particular, manifold-adaptive diffusion~\citep{tang2024adaptivity} attains this exponent (for $W_1$) under a boundaryless-manifold assumption, while \method{} attains the same intrinsic-dimension exponent for $W_2$ without requiring a no-boundary condition.
+By contrast, existing guarantees for ambient-space diffusion and flow-matching methods typically scale with the ambient dimension $D$, leading to slower rates when $d^*\ll D$.
+To the best of our knowledge, comparable nonasymptotic Wasserstein-risk guarantees for normalizing flows are not currently available.
+
+A salient difference is that the analysis of manifold-adaptive diffusion~\citep{tang2024adaptivity} assumes the data manifold is without boundary.
+This excludes many practical settings in which the support has a boundary (e.g., manifolds embedded in a bounded region), including the six synthetic manifolds considered in Section~\ref{sec:experiments-synth}.
+In contrast, our pull-back analysis does not rely on a boundaryless assumption.
+Empirically (Section~\ref{sec:experiments-synth}), \method{} remains effective in precisely these boundary-affected regimes.
+
+\paragraph{Neural network architecture.}
+Beyond the rate comparison in Table~\ref{tab:theory-generative-summary}, Corollary~\ref{cor:explicit-n-rate-gamma} suggests a flexible architecture trade-off for \method{}:
+the rate is achieved by choosing width and depth so that the product $WL$ scales as
+$\lceil (n/\log^5 n)^{\kappa}\rceil$.
+This permits relatively deep architectures provided the width is adjusted accordingly.
+In contrast, the constructions in~\citet{oko2023diffusion,tang2024adaptivity} typically realize their rates by letting the width (and sparsity) grow rapidly with $n$, yielding substantially larger networks that can be less aligned with standard practical design choices.
+
+
+
+\begin{table*}[t]
+  \centering
+  \caption{Theoretical guarantees for score-based diffusion and flow models (rates up to a polylogarithmic
+factor of $n$ and constants).}
+  \label{tab:theory-generative-summary}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.15}
+  \begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{0.20\textwidth} >{\raggedright\arraybackslash}p{0.10\textwidth} >{\raggedright\arraybackslash}p{0.17\textwidth} >{\raggedright\arraybackslash}p{0.20\textwidth} >{\raggedright\arraybackslash}X@{}}
+    \toprule
+    \textbf{Method} &
+    \textbf{Metric} &
+    \textbf{Rate} &
+    \textbf{Key assumptions} &
+    \textbf{Estimator / class (scaling in $n$)} \\
+    \midrule
+
+    Diffusion \citep{oko2023diffusion} &
+    $\mathrm{TV}$,\; $W_1$ &
+    $n^{-\eta/(2\eta+D)}$ (TV),\;
+    $n^{-(\eta+1-\delta)/(2\eta+D)}$ ($W_1$) &
+    $\eta$-smooth density in $\mathbb{R}^D$ (Besov-type); boundary regularity &
+    ReLU score nets: $L_n=\Theta(\log n)$,\;
+    $W_n,S_n=\widetilde{\Theta}\!\bigl(n^{D/(2\eta+D)}\bigr)$ \\
+
+    Manifold-adaptive diffusion \citep{tang2024adaptivity} &
+    $W_1$ &
+    $n^{-(\eta+1)/(2\eta+d^*)}$ &
+    $\eta$-smooth density on a $d^*$-manifold; \emph{no boundary} &
+    ReLU score nets: $L_n=\Theta(\log^4 n)$,\;
+    $W_n,S_n=\widetilde{\Theta}\!\bigl(n^{d/(2\eta+d^*)}\bigr)$ \\
+
+    Lower-bound-free diffusion \citep{zhang2024minimax} &
+    $\mathrm{TV}$ &
+    $n^{-\eta/(2\eta+D)}$ &
+    Sub-Gaussian data in $\mathbb{R}^D$; (optionally) $\eta$-Sobolev with $\eta\le 2$ &
+    Truncated KDE plug-in score \\
+
+    KDE-based flow matching \citep{kunkeltrabs2025fm_kde} &
+    $W_1$ &
+    $n^{-(\eta+1)/(2\eta+D)}$ &
+    $\eta$-smooth density (Besov); compact support in $\mathbb{R}^D$ &
+    Lipschitz vector-field nets; sufficiently expressive class \\
+
+    \textsc{MAGT} (Theorem \ref{thm:acc}) &
+    $W_2$ &
+    $n^{-(\eta+1)/(2\eta+d^*)}$ &
+    $\eta$-smooth density on a $d^*$-manifold (boundary allowed) &
+    Anchor-based score estimator; flexible ReLU architecture \\
+    \bottomrule
+  \end{tabularx}
+\end{table*}
+
+\section{Practical choices for Monte Carlo approximation}
+\label{sec:mcapprox}
+This section gives practical schemes for approximating the posterior mean that enters the transport-based
+score estimator, together with nonasymptotic bounds controlling the finite-anchor term
+$\varepsilon(\tilde{\pi},t,K)$ in Theorem~\ref{thm:acc}.
+
+\paragraph{Relation to existing Monte Carlo/QMC theory.}
+Lemmas~\ref{thm:gen}--\ref{lem:snis-map} below rely on standard tools from
+self-normalized importance sampling (SNIS) and quasi--Monte Carlo (QMC):
+nonasymptotic SNIS error bounds/variance expansions (see, e.g.,~\cite{owen2013mc}) and
+the Koksma--Hlawka inequality together with classical discrepancy estimates for low-discrepancy point sets
+(see, e.g.,~\cite{niederreiter1992random,dick2010digital}).
+We restate these bounds mainly to track how the constants depend on the smoothing level $\sigma_t$ and the intrinsic dimension $d$,
+and to make the finite-anchor term $\varepsilon(\tilde\pi,t,K)$ in Theorem~\ref{thm:acc} explicit.
+The proofs are given in Appendix~\ref{app:sec4-proofs}.
+
+Recall from~\eqref{eq:mixture-score}--\eqref{eq:score-estimator} that the smoothed score at noise level~$t$ depends on the posterior mean $m_t(y_t)\;:=\;\mathbb E[h(U)\mid y_t]$.
+Any finite-anchor approximation produces $\widetilde m_{t,K}(y_t)$ and the induced score estimate
+$\widetilde s_{t,K}(y_t)=\sigma_t^{-2}\bigl(\alpha_t \widetilde m_{t,K}(y_t)-y_t\bigr)$.
+Since
+\begin{equation}\label{eq:score-mean-error}
+\widetilde s_{t,K}(y_t)-\nabla_{y_t}\log p(y_t)
+=
+\frac{\alpha_t}{\sigma_t^2}\Bigl(\widetilde m_{t,K}(y_t)-m_t(y_t)\Bigr),
+\end{equation}
+it suffices to control the approximation error of the posterior mean for each method below.
+
+\subsection{\method{}-MC}
+\method{}-MC is the baseline variant in which we approximate the posterior expectation in~\eqref{eq:mixture-score}
+using standard Monte Carlo anchors drawn i.i.d.\ from the base distribution.
+Equivalently, we choose the proposal in~\eqref{eq:is-weights} to be $\tilde\pi(\cdot\mid y_t)\equiv\pi(\cdot)$, draw $u_1,\dots,u_K\sim\pi$, and compute
+$\widetilde s_{t,K}(y_t;h,\pi,\pi)$ via~\eqref{eq:score-estimator}.
+In this case, the importance ratio cancels and the weights are proportional to the Gaussian likelihood terms
+$\phi\!\left(y_t;\alpha_t h(u_j),\sigma_t^2 I_D\right)$, yielding a simple finite-mixture approximation.
+
+This approach is embarrassingly parallel and requires no optimization at inference time. However, when the posterior $\pi_t(u\mid y_t)$ is much more concentrated than the base distribution of $\pi$ (e.g., for small $\sigma_t$), most anchors receive negligible weight, and the effective sample size can collapse.  The QMC and MAP variants below are designed to mitigate this variance in complementary ways.
+
+
+\begin{lemma}[$K$-approximation error]\label{thm:gen}
+Consider the estimator with $\tilde\pi=\pi$, i.e., draw i.i.d.\ anchors
+$\bm U^{(1)},\dots,\bm U^{(K)}\sim\pi$ (independent of $\Y_t$) and form the transport-based score
+estimate $\widetilde s_{t,K}(\Y_t;h,\pi,\pi)$ via~\eqref{eq:score-estimator}.
+Then for all sufficiently large $K$, there exists a constant $C>0$ depending only on
+$(B,d,D)$ and the geometric constants in Assumptions~\ref{G1}--\ref{G2} such that, 
+\begin{equation}\label{eq:K-general}
+\E\,
+\big\|\widetilde s_{t,K}(\y_t;h,\pi,\pi)-s_t(\y_t;h)\big\|_2^2
+\ \le\ \frac{C\,\alpha_t^2}{K\,\sigma_t^{d+4}}\,,
+\end{equation}
+where $s_t(\cdot;h):=\nabla_{\y}\log p_t(\y)$ is the ideal (infinite-anchor) mixture score at level $t$.
+\end{lemma}
+
+\subsection{\method{}-QMC}
+\method{}-QMC replaces i.i.d.\ anchors with quasi--Monte Carlo point sets that approximate the base distribution $\pi$ more evenly.
+Concretely, we use a low-discrepancy sequence (optionally randomized via scrambling) in $[0,1]^{d}$ and map it to the target base
+(e.g., via the inverse CDF transform for factorized bases or other standard transports).
+We then plug these anchors into~\eqref{eq:score-estimator} exactly as in \method{}-MC.
+
+Because $\widetilde m_{t,K}(y_t)$ is a ratio of two posterior expectations, reducing the integration error of each term can significantly improve score stability.
+In many smooth settings, QMC yields a faster empirical convergence rate than $K^{-1/2}$ and often provides a practical variance reduction mechanism without changing the underlying model.
+
+\paragraph{Star discrepancy and Hardy--Krause variation.}
+For a point set $P_K=\{z_1,\ldots,z_K\}\subset[0,1]^{d}$, its star discrepancy is
+\begin{equation}
+\label{D-star}
+D^\ast(P_K)
+:=
+\sup_{x\in[0,1]^d}
+\left|
+\frac1K\sum_{j=1}^K \mathbf{1}\{z_j\in[0,x)\}
+-\prod_{i=1}^d x_i
+\right|,
+\end{equation}
+where $x=(x_1,\ldots,x_d)$ and $[0,x):=\prod_{i=1}^d[0,x_i)$ is an anchored axis-aligned box.
+We write $V_{\mathrm{HK}}(g)$ for the Hardy--Krause variation of an integrand $g:[0,1]^d\to\R$; for smooth $g$ it can be bounded in terms of mixed partial derivatives. See standard QMC references for the formal definition and the Koksma--Hlawka inequality \citep{niederreiter1992random,dick2010digital}.
+
+
+\begin{lemma}[\method{}-QMC score discrepancy bound]\label{lem:qmc-discrepancy}
+Fix $t\in(0,1)$ and an observation $\y_t\in\R^D$.
+Assume there exists a measurable map $T:[0,1]^d\to\mathcal U$ such that
+$T(\bm Z)\sim\pi$ when $\bm Z\sim\Unif([0,1]^d)$.
+Let $P_K=\{\bm z_1,\ldots,\bm z_K\}\subset[0,1]^d$ be a point set with star discrepancy
+$D^\ast(P_K)$, and define the QMC anchors $\bm U^{(j)}:=T(\bm z_j)$.
+Form the QMC posterior-mean and score estimators
+\[
+\widetilde m^{\mathrm{QMC}}_{t,K}(\y_t)
+:=
+\frac{\sum_{j=1}^K \phi\!\left(\y_t;\alpha_t h(\bm U^{(j)}),\sigma_t^2 \bm I_D\right)\,h(\bm U^{(j)})}
+{\sum_{j=1}^K \phi\!\left(\y_t;\alpha_t h(\bm U^{(j)}),\sigma_t^2 \bm I_D\right)},
+\qquad
+\widetilde s^{\mathrm{QMC}}_{t,K}(\y_t)
+:=
+\frac{1}{\sigma_t^2}\big(\alpha_t \widetilde m^{\mathrm{QMC}}_{t,K}(\y_t)-\y_t\big).
+\]
+Define the integrands on $[0,1]^d$,
+\[
+f_0(\bm z):=\phi\!\left(\y_t;\alpha_t h(T(\bm z)),\sigma_t^2 \bm I_D\right),\qquad
+f_{1,r}(\bm z):=h_r(T(\bm z))\,\phi\!\left(\y_t;\alpha_t h(T(\bm z)),\sigma_t^2 \bm I_D\right),
+\ \ r=1,\dots,D,
+\]
+and set $V_{\mathrm{HK}}(f_0)$ for the Hardy--Krause variation of $f_0$ and
+$V_{\mathrm{HK}}(f_1):=\sum_{r=1}^D V_{\mathrm{HK}}(f_{1,r})$.
+Let
+$
+I_0:=\int_{[0,1]^d} f_0(\bm z)\,d\bm z$ and 
+$I_1:=\int_{[0,1]^d} f_1(\bm z)\,d\bm z
+$.
+If $V_{\mathrm{HK}}(f_0)\,D^\ast(P_K)\le I_0/2$, then
+\begin{equation}\label{eq:qmc-score-bound}
+\big\|\widetilde s^{\mathrm{QMC}}_{t,K}(\y_t)-\nabla_{\y_t}\log p_t(\y_t)\big\|_2
+\ \le\ 
+\frac{2\alpha_t}{\sigma_t^2\,I_0}
+\Big(V_{\mathrm{HK}}(f_1)+\|m_t(\y_t)\|_2\,V_{\mathrm{HK}}(f_0)\Big)\,D^\ast(P_K).
+\end{equation}
+
+In particular, for classical low-discrepancy constructions one has $D^\ast(P_K)=\bigO\!\big(K^{-1}(\log K)^{d}\big)$, yielding a
+$\bigO\!\big(K^{-1}(\log K)^{d}\big)$ deterministic integration rate whenever $V_{\mathrm{HK}}(f_0)$ and $V_{\mathrm{HK}}(f_1)$ are finite
+\citep{niederreiter1992random,dick2010digital}.
+\end{lemma}
+
+\subsection{\method{}-MAP}
+\method{}-MAP approximates the expectation using a data-dependent proposal prior
+constructed from a MAP-Laplace-Gauss-Newton approximation.
+This yields a more concentrated proposal distribution around high-posterior-mass regions,
+thereby improving the efficiency of the expectation approximation.
+
+For a fixed noise level $t$ and observation $\y_t\in\R^D$, the latent posterior induced by the base density $\pi$ and the map $h$ is
+\begin{equation}
+\label{eq:latent-posterior}
+\pi_t(\bm u\mid \y_t)\ \propto\ \pi(\bm u)\,\phi\!\left(\y_t;\alpha_t h(\bm u),\sigma_t^2 \bm I_D\right).
+\end{equation}
+We compute a MAP estimate $\hat{\bm u}\in\arg\max_{\bm u}\pi_t(\bm u\mid \y_t)$, equivalently
+$\hat{\bm u}\in\arg\min_{\bm u}\Phi(\bm u)$ for the negative log-posterior
+\[
+\Phi(\bm u)
+\ :=\ 
+\frac{1}{2\sigma_t^2}\big\|\y_t-\alpha_t h(\bm u)\big\|_2^2\;-\;\log \pi(\bm u).
+\]
+A Laplace approximation of~\eqref{eq:latent-posterior} yields a Gaussian proposal of the form
+$q(\bm u\mid \y_t)=\mathcal{N}(\hat{\bm u},\tilde{\bm\Sigma})$.
+In \method{}-MAP we use this data-dependent Gaussian as the proposal
+$\tilde\pi(\cdot\mid \y_t)=q(\cdot\mid \y_t)$ in the importance weights~\eqref{eq:is-weights},
+which concentrates anchors near high posterior mass and typically improves the effective sample size when $\sigma_t$ is small.
+
+\paragraph{Gauss--Newton Laplace proposal.}
+Computing the exact Hessian $\nabla^2\Phi(\hat{\bm u})$ can be expensive because it involves second derivatives of $h$.
+Instead, we use a Gauss--Newton approximation based on the Jacobian $J_h(\hat{\bm u})$.
+Concretely, we take
+\[
+\hat{\bm\Lambda}
+\ :=\ 
+\bm I_d \;+\;\frac{\alpha_t^2}{\sigma_t^2}\, J_h(\hat{\bm u})^{\top}J_h(\hat{\bm u}),
+\qquad
+\tilde{\bm\Sigma}
+\ :=\ 
+(\zeta\,\hat{\bm\Lambda} + \tau^2 \bm I_d)^{-1},
+\]
+where $\bm I_d$ is the $d\times d$ identity matrix, $\zeta\ge 0$ is an optional inflation factor, and $\tau^2\ge 0$ provides numerical damping.
+
+\begin{lemma}[\method{}-MAP self-normalized IS error]\label{lem:snis-map}
+Fix $t\in(0,1)$ and $\y_t\in\R^D$.
+Assume $\pi_t(\cdot\mid \y_t)\ll q(\cdot\mid \y_t)$ and $\|h(\bm u)\|_2\le B$ for all $\bm u$.
+Let $\widetilde m_{t,K}(\y_t)$ denote the self-normalized importance-sampling estimator of
+$m_t(\y_t)=\E_{\pi_t(\cdot\mid \y_t)}[h(\bm U)]$
+formed from i.i.d.\ samples $\bm U^{(1)},\ldots,\bm U^{(K)}\sim q(\cdot\mid \y_t)$ and weights proportional to
+$\pi_t(\bm u\mid \y_t)/q(\bm u\mid \y_t)$ (equivalently, the unnormalized weights~\eqref{eq:is-weights} with $\tilde\pi=q$).
+Define the order-2 divergence factor
+\[
+D_2\!\left(\pi_t(\cdot\mid \y_t)\,\big\|\,q(\cdot\mid \y_t)\right)
+:=
+\E_{q(\cdot\mid \y_t)}\!\left[\left(\frac{\pi_t(\bm U\mid \y_t)}{q(\bm U\mid \y_t)}\right)^2\right]
+=1+\chi^2\!\left(\pi_t(\cdot\mid \y_t)\,\big\|\,q(\cdot\mid \y_t)\right).
+\]
+Then,
+\[
+\E\!\left[\big\|\widetilde s_{t,K}(\y_t;h,\pi,q)-\nabla_{\y_t}\log p_t(\y_t)\big\|_2^2\ \Big|\ \y_t\right]
+\ \le\ \frac{32\,\alpha_t^2 B^2}{K\,\sigma_t^4}\;
+D_2\!\left(\pi_t(\cdot\mid \y_t)\,\big\|\,q(\cdot\mid \y_t)\right).
+\]
+Thus \method{}-MAP achieves the usual $K^{-1/2}$ root-MSE rate, with a constant governed by how well the Laplace proposal matches the posterior
+(through $D_2$) \citep{owen2013mc}.
+\end{lemma}
+
+Standard Laplace-approximation bounds quantify when the Gaussian proposal $q(\cdot\mid \y_t)$ is close to the true posterior:
+small local curvature mismatch and accurate covariance approximation (together with posterior concentration) yield small divergence. Moreover, importance-sampling efficiency depends on how well $q(\cdot\mid \y_t)$ matches the posterior, with weight dispersion governed by divergences such as $D_2(\pi_t\|q)$.
+Finally, even structured covariances (e.g., diagonal or low-rank) can work well in practice when they preserve the dominant directions of $\hat{\bm\Sigma}$,
+which keeps the covariance-mismatch contribution small.
+
+
+ 
+\section{Implementation}
+\label{sec:implementation}
+
+This section describes how we optimize the empirical objective $L_{n,K}$ in~\eqref{risk-minimization},
+especially when the anchor budget $K$ is large. Recall that $K$ enters the loss inside the score estimator $\widetilde s_{t,K}$, through the self-normalized importance weights in~\eqref{eq:is-weights}. Consequently, increasing $K$ improves the Monte Carlo accuracy of each per-sample score estimate, but it also changes the computational profile of stochastic gradient descent (SGD) used in optimization.
+
+Concerning the SGD minibatch computation $\{(\y_0^{(b)},\y_t^{(b)})\}_{b=1}^B$ at a fixed time $t$ and a set of anchors $\{\bm u_k\}_{k=1}^K$, define center outputs $\tilde\y^{(k)}_0=h_{\theta}(\bm u_k)\in\R^D$.
+In the common choice $\tilde\pi\equiv\pi$, the unnormalized weights are proportional to Gaussian likelihoods, so the (normalized) soft assignment for item $b$ is
+\begin{equation}
+\label{eq:impl-softassign}
+w_{b,k}
+\;:=\;
+\frac{\exp\bigl(z_{b,k}\bigr)}{\sum_{j=1}^K \exp\bigl(z_{b,j}\bigr)},
+\qquad
+z_{b,k}
+\;:=\;
+-\frac{\|\y_t^{(b)}-\alpha_t\tilde\y_0^{(k)}\|_2^2}{2\sigma_t^2};
+\;\; b=1,\dots,B;\ k=1,\dots,K.
+\end{equation}
+The posterior mean is $m_b=\sum_{k=1}^K w_{b,k}\tilde\y_0^{(k)}$, and the score estimator becomes
+$\widetilde s_{t,K}(\y_t^{(b)})=(\alpha_t m_b-\y_t^{(b)})/\sigma_t^2$.
+Thus evaluating one SGD step for \eqref{risk-minimization} requires (i) computing all logits $z_{b,k}$'s; $b=1,\dots,B$; $k=1,\dots,K$, (ii) forming a $K$-term softmax and weighted sum per batch item, and (iii) differentiating through these operations.
+
+If we directly implement \eqref{risk-minimization} with automatic differentiation, the computation graph contains all $BK$ interactions. This has two practical issues. First, the computational cost of the forward pass per step scales as $\mathcal{O}(BKD)$ (distance evaluations and weighted sums). Second, 
+naively backpropagating through the softmax and weighted sums requires storing $\{z_{b,k},w_{b,k},\tilde\y_0^{(k)}\}$ (and intermediate activations through $h_{\theta}$), which can scale like $\mathcal{O}(BK)$ plus the activations for $K$ anchor forward passes. When $K\gg B$, this is often the bottleneck. In addition, the softmax in \eqref{eq:impl-softassign} can be numerically unstable for large $K$ as many logits may lie far in the tail. In practice, we compute it with a log-sum-exp stabilization, i.e., subtract $\max_k z_{b,k}$ before exponentiating.
+
+From the optimization standpoint, $K$ also controls the stochasticity of the gradient:
+small $K$ yields a noisier Monte Carlo approximation to the posterior mean and hence a higher-variance stochastic gradient, while larger $K$ reduces this variance but increases per-step cost.
+Our implementation therefore separates (a) the Monte Carlo noise induced by finite $K$ from (b) the usual minibatch noise induced by finite $B$.
+
+\paragraph{Exact gradients with respect to anchor outputs plus chunked backprop.}
+To keep the estimator in \eqref{eq:score-estimator} unchanged while making SGD practical for large $K$, we use a two-stage gradient computation.
+
+\emph{Stage 1 (No-grad forward; compute exact center gradients).}
+We compute the center outputs $\tilde\y_0^{(k)}=h_{\theta}(u_k)$ and the logits/weights \eqref{eq:impl-softassign} \emph{without} storing the full autograd graph, where $h$ is parametrized by $h_{\theta}$ with
+$\theta$ indicating model parameters. Given the minibatch loss, we then compute the exact gradient of the loss with respect to each center output, $g_k:=\partial L/\partial\tilde\y_0^{(k)}$, using a closed-form expression obtained by differentiating through $m_b=\sum_k w_{b,k}\tilde\y_0^{(k)}$ and the softmax Jacobian.
+
+\emph{Stage 2 (Chunked VJP through $h_{\theta}$).}
+Once $\{g_k\}_{k=1}^K$ are computed, the parameter gradient factors through the Jacobian:
+\begin{equation}
+\label{eq:impl-vjp}
+\nabla_\theta L
+\;=\;
+\sum_{k=1}^K \nabla_{\theta} h_{\theta}(u_k)^\top\, g_k
+\;=\; \nabla_\theta\,\sum_{k=1}^K \langle h_{\theta}(u_k),\, g_k\rangle,
+\end{equation}
+where $\nabla_{\theta} h_{\theta}(u_k)\in\mathbb{R}^{D\times|\theta|}$ denotes the Jacobian of $h_{\theta}(u_k)$ with respect to the parameter vector $\theta$.
+Equation~\eqref{eq:impl-vjp} means we can backpropagate through $h_{\theta}$ by treating $g_k$ as constants and processing anchors in chunks of size $K_c$.
+Peak memory then scales with $K_c$ rather than $K$, while the computed gradient is exact for the chosen anchors.
+
+Algorithm~\ref{algorithm_1} summarizes the resulting update.
+
+
+%\paragraph{Benefits.}
+%(i) \textbf{Memory:} Peak memory is $O(K_cD)$ (chunk size $K_c$), independent of $B\times K$. \\
+%(ii) \textbf{Speed/variance control:} You can backprop only a subset of centers (unbiased importance sampling or top-$M$) while still computing all $g_k$ cheaply in Phase-1. 
+
+\begin{algorithm}[H]
+\caption{Best single-level transport map $\hat h_{\hat\lambda}$ given $(K,d)$ \label{algorithm_1} }
+\begin{algorithmic}[1]
+\Require Training data $\mathcal{D}_{\text{train}}$, validation data $\mathcal{D}_{\text{val}}$, latent dimension $d$, anchor count $K$, evaluation metric $\mathcal{E}(\cdot,\cdot)$, candidate times $\mathcal{T}=\{t_1,\dots,t_L\}$, learning rate $r$
+\Ensure Trained transport \(\hat h_{\hat\lambda}\)
+\For{$t \in \mathcal{T}$}
+\For{$e = 1,\dots,\text{max epoch}$}
+\For{each minibatch $\{\Y^{(i)}\}_{i=1}^{B} \subset \mathcal{D}_{\text{train}}$}
+\State Sample noises $\{ \Z^{(i)}\}_{i=1}^{B}\!\sim\!\mathcal N(\mathbf 0,\mathbf I)$; set $t_b\!\gets\!t$
+\State $\alpha_b\!=\!\alpha(t_b)$, $\sigma_b\!=\!\sigma(t_b)$; $\ \Y^{(b)}_t \gets \alpha_b \Y^{(b)} + \sigma_b \Z^{(b)}$
+\State \textbf{Parameter update:}\quad $\theta \gets \textsc{Update}(\theta, r;\ \{(\Y^{(b)}_t,t_b)\}_{b=1}^B,\ K,\ d,\ K_c,\ M)$
+\EndFor
+\EndFor
+\State Set $\hat h_{(t,d,K)} \gets h_{\theta}$
+\State Sample anchors $\{\U^j\}_{j=1}^{|\mathcal{D}_{\text{val}}|} \sim \pi_{\U}$;
+Generate $\widehat{\mathcal{D}}^{(t)} \gets \{\hat h_{(t,d,K)}(\U^j)\}_{j=1}^{|\mathcal{D}_{\text{val}}|}$
+\State Compute $d(t) \gets \mathcal E\!\big(\widehat{\mathcal{D}}^{(t)}, \mathcal{D}_{\text{val}}\big)$
+\EndFor
+\State $\hat t \gets \arg\min_{t \in \mathcal{T}} d(t)$
+\State Set $\hat\lambda \gets (\hat t,d,K)$
+\State Set $\hat h_{\hat\lambda} \gets \hat h_{(\hat t,d,K)}$
+\State \Return $\hat h_{\hat\lambda}$
+
+\Function{Update}{$\theta, r;\ \{(\Y^{(b)}_t,t_b)\}_{b=1}^B,\ K,\ d,\ K_c,\ M$}
+\State Sample latents $\bm u_k \sim \pi$ for $k=1,\dots,K$
+\State Compute centers \textbf{without grad}: $\tilde{\Y}^{(k)} = h_{\theta}(u_k)$
+%\Statex
+\State \textbf{Phase 1 (no-grad forward \& exact center gradients).}
+\For{$b=1$ \textbf{to} $B$}
+\State $z_{b,k} \gets -\|\Y^{(b)}_t-\alpha_b \tilde{\Y}^{(k)}\|^2/(2\sigma_b^2)$,\quad
+$w_{b,k} \gets \mathrm{softmax}_k(z_{b,\cdot})$
+\State $m_b \gets \sum_{k=1}^K w_{b,k} \tilde{\Y}^{(k)}$,\quad
+$sP_b \gets (\alpha_b m_b - \Y^{(b)}_t)/\sigma_b^2$
+\EndFor
+\State Define true score $T_b$; set $g_b \gets sP_b - T_b$, \quad $c_b \gets (\alpha_b/\sigma_b^2)\,g_b$,
+$\Delta_{b,k} \gets \langle \tilde{\Y}^{(k)} - m_b,\, c_b\rangle$
+\State For each $k$, set
+$g_k \;\gets\; \sum_{b=1}^B \Big[\, w_{b,k}\, c_b \;+\; w_{b,k}\,\Delta_{b,k}\big(\tfrac{\alpha_b}{\sigma_b^2}\Y^{(b)}_t - \tfrac{\alpha_b^2}{\sigma_b^2}\tilde{\Y}^{(k)}\big)\,\Big]
+$
+%\Statex
+\State \textbf{Phase 2 (chunked VJP; $g$ frozen).}
+\For{chunks $\mathcal{K}\subset\{1,\dots,K\}$ of size $\le K_c$}
+\State $S_{\mathcal{K}}(\theta) \gets \sum_{k\in\mathcal{K}} \langle h_{\theta}(u_k),\, g_k\rangle$ \ \textit{(treat $g$ as constant)}
+\State Backprop $\nabla_\theta S_{\mathcal{K}}(\theta)$ and accumulate
+\EndFor
+\State Gradient step: $\theta \leftarrow \theta - r \sum_{\mathcal{K}} \nabla_\theta S_{\mathcal{K}}(\theta)$
+\State \Return $\theta$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
+
+
+\section{Experiments}
+\label{sec:experiments}
+
+This section evaluates whether \method{} can reconcile three objectives that are often in tension in generative modeling:
+(i) \emph{generation fidelity} (matching the target distribution),
+(ii) \emph{sampling efficiency} (fast inference-time generation),
+and (iii) \emph{manifold alignment} (concentrating probability mass near the intrinsic low-dimensional support rather than leaking into the ambient space).
+We benchmark \method{} against diffusion-, ODE/transport-, and adversarial-based baselines on both controlled synthetic manifolds (where ground-truth geometry is known) and real datasets (images and tabular/high-dimensional sequences).
+
+
+\subsection{Synthetic benchmarks: low-dimensional manifolds}
+\label{sec:experiments-synth}
+
+We first evaluate on controlled synthetic distributions where both the ground-truth distribution and (for manifold datasets) the underlying manifold are known.
+Table~\ref{tab:wd_time} reports six representative benchmarks: four non-Gaussian distributions in $\R^2$ (\textit{rings2d}, \textit{spiral2d}, \textit{moons2d}, \textit{checker2d}) and two thin manifolds embedded in $\R^3$ (\textit{helix3d}, \textit{torus3d}).
+For the manifold datasets, we sample latent parameters from a uniform distribution, map them through a nonlinear embedding into $\R^3$, and add small i.i.d.\ Gaussian jitter; full simulation details are provided in Appendix~\ref{appendix_E}.
+
+\paragraph{Data splits and evaluation protocol.}
+Across all synthetic benchmarks, the training set $\mathcal{D}_{\text{train}}=\{\y_0^i\}_{i=1}^{n}$ contains $n=10{,}000$ observations.
+We use an independent validation set $\mathcal{D}_{\text{val}}$ of size $5{,}000$ for hyperparameter selection and a held-out test set for computing $W_2$ and the off-manifold rate.
+Unless otherwise stated, each method generates $10{,}000$ samples for evaluation.
+
+\paragraph{\method{} configuration (synthetic).}
+For each dataset, we set the \emph{latent dimension} $d$ equal to the known intrinsic dimension reported in Table~\ref{tab:wd_time} and use the standard Gaussian base $\pi_U=\cN(0,I_d)$.
+The transport $h_{\theta}:\R^d\to\R^D$ is a 5-hidden-layer MLP of width 512 (ReLU).
+We train \method{} with the \method{}-MC score estimator (proposal $\tilde\pi=\pi_U$) and tune the \emph{smoothing level} $t$ by validation:
+we search $t\in\{0.1,0.2,\ldots,0.9\}$ and select the value minimizing the fixed-$t$ score-matching loss on $\mathcal{D}_{\text{val}}$.
+Unless otherwise noted, we report results at anchor budget $K=1024$; Figure~\ref{fig:knt} further studies sensitivity to $K$ and $t$.
+
+\paragraph{Diffusion baselines (synthetic).}
+We train a time-conditioned score network with the same MLP backbone and a 32-dimensional time embedding, using denoising score matching over $t\in[t_{\mathrm{low}},t_{\mathrm{high}}]$.
+Sampling uses:
+(i) DDIM \citep{song2020ddim} with 1000 steps and $\eta=1.0$ on $t\in[0.05,0.90]$ (NFE$=1000$); and
+(ii) DPM-Solver++ \citep{lu2022dpmsolver} with either 20 (first-order) or 40 (second-order midpoint) function evaluations on the same interval.
+
+\paragraph{Flow matching baseline (synthetic).}
+We train a time-conditioned velocity field with the same MLP backbone and 32-dimensional time embedding.
+Sampling solves the learned ODE with a midpoint integrator and step size $0.05$, yielding 20 velocity evaluations (NFE$=20$) over $t\in[0.05,0.90]$.
+
+\paragraph{WGAN-GP baseline (synthetic).}
+We train WGAN-GP \citep{arjovsky2017wasserstein,gulrajani2017improved} with both generator and critic implemented as 5-hidden-layer MLPs of width 512 (ReLU), matching the \method{} backbone capacity.
+The generator takes a $d$-dimensional latent input (matching the intrinsic dimension for this controlled setting), and we use five critic updates per generator update, gradient-penalty coefficient 10, and Adam with learning rate $10^{-4}$ and $(\beta_1,\beta_2)=(0.5,0.999)$.
+
+\paragraph{Iterative refinement using \method{}'s score estimator.}
+We additionally evaluate \method{}--DDIM (M-DDIM), which uses the same learned transport $h_{\theta}$ and anchor-based score estimator $\widetilde s_{t,K}$ as \method{}, but performs iterative DDIM-style refinement from $t_{\mathrm{high}}=0.90$ to $t_{\mathrm{low}}=0.05$ for 205 steps (NFE$=205$; $\eta=1.0$).
+To avoid repeatedly recomputing anchor outputs, we cache the anchor bank $\{h_{\theta}(\bm u_k)\}_{k=1}^K$ with $\bm u_k\sim\cN(0,\bm{I}_d)$ once and reuse it at every refinement step.
+This baseline isolates whether \method{}'s empirical gains come from (a) the single-level score objective and anchor posterior estimator, or (b) the one-shot amortized transport.
+
+\begingroup
+ \setlength{\tabcolsep}{3pt} 
+ \renewcommand{\arraystretch}{0.82}
+ \setlength{\aboverulesep}{0.5 pt} 
+ \setlength{\belowrulesep}{0.5pt}
+ \setlength{\abovetopsep}{0pt}
+ \setlength{\belowbottomsep}{0pt}
+ \setlength{\cmidrulekern}{0pt} 
+
+ \begin{table}
+\caption{Empirical $W_2$ $(\downarrow)$, off-manifold rate (fraction of samples with distance $>0.1$; $(\downarrow)$), and wall-clock sampling time (seconds) to generate $10{,}000$ samples (identical batching and hardware across methods). Parentheses report standard deviations across runs for $W_2$ and the off-manifold rate. NFE denotes the number of score/velocity network evaluations. Boldface indicates the best-performing method for each metric.}
+ \label{tab:wd_time}
+ \centering
+ \scriptsize
+ \begin{tabular}{l*{3}{cc}}
+ \toprule
+ & \multicolumn{2}{c}{rings2d ($d=1$)} & \multicolumn{2}{c}{spiral2d ($d=1$)} & \multicolumn{2}{c}{moons2d ($d=2$)} \\
+ \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+ & $W_2$ $(\downarrow)$ & \% out $(\downarrow)$ & $W_2$ $(\downarrow)$ & \% out $(\downarrow)$ & $W_2$ $(\downarrow)$ & \% out $(\downarrow)$ \\
+ \midrule
+ \makecell{\method{}\\\scriptsize{NFE= 1}}
+ & \makecell{\textbf{0.0592}\\\scriptsize(0.0070)} & \makecell{\textbf{0.1406}\\\scriptsize(0.0255)}
+ & \makecell{\textbf{0.0767}\\\scriptsize(0.0185)} & \makecell{0.4150\\\scriptsize(0.1501)}
+ & \makecell{\textbf{0.0331}\\\scriptsize(0.0036)} & \makecell{\textbf{0.0360}\\\scriptsize(0.0103)} \\
+~~~~~~Time & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} \\
+ \cmidrule(lr){1-7}
+ \makecell{M-DDIM\\\scriptsize{NFE= 205}}
+ & \makecell{0.0613\\\scriptsize(0.0100)} & \makecell{0.2014\\\scriptsize(0.0211)}
+ & \makecell{0.0836\\\scriptsize(0.0054)} & \makecell{\textbf{0.3740}\\\scriptsize(0.0927)}
+ & \makecell{0.0733\\\scriptsize(0.0219)} & \makecell{0.2199\\\scriptsize(0.0709)} \\
+ ~~~~~~Time & \multicolumn{2}{c}{0.615} & \multicolumn{2}{c}{0.613} & \multicolumn{2}{c}{0.668} \\
+ \cmidrule(lr){1-7}
+ \makecell{DPM++ (1s)\\\scriptsize{NFE= 20}}
+ & \makecell{0.1052\\\scriptsize(0.0228)} & \makecell{0.6905\\\scriptsize(0.0283)}
+ & \makecell{0.1992\\\scriptsize(0.0300)} & \makecell{0.7584\\\scriptsize(0.0261)}
+ & \makecell{0.1199\\\scriptsize(0.0083)} & \makecell{0.1672\\\scriptsize(0.0293)} \\
+~~~~~~Time  & \multicolumn{2}{c}{0.153} & \multicolumn{2}{c}{0.132} & \multicolumn{2}{c}{0.164} \\
+ \cmidrule(lr){1-7}
+ \makecell{DPM++ (2m)\\\scriptsize{NFE= 40}}
+ & \makecell{0.1057\\\scriptsize(0.0239)} & \makecell{0.6922\\\scriptsize(0.0188)}
+ & \makecell{0.1976\\\scriptsize(0.0290)} & \makecell{0.7644\\\scriptsize(0.0259)}
+ & \makecell{0.1222\\\scriptsize(0.0115)} & \makecell{0.1614\\\scriptsize(0.0200)} \\
+~~~~~~Time  & \multicolumn{2}{c}{0.300} & \multicolumn{2}{c}{0.256} & \multicolumn{2}{c}{0.327} \\
+ \cmidrule(lr){1-7}
+ \makecell{DDIM\\\scriptsize{NFE= 1000}}
+ & \makecell{0.1107\\\scriptsize(0.0172)} & \makecell{0.7057\\\scriptsize(0.0188)}
+ & \makecell{0.1494\\\scriptsize(0.0292)} & \makecell{0.7767\\\scriptsize(0.0254)}
+ & \makecell{0.0920\\\scriptsize(0.0311)} & \makecell{0.1843\\\scriptsize(0.0146)} \\
+~~~~~~Time  & \multicolumn{2}{c}{3.190} & \multicolumn{2}{c}{2.720} & \multicolumn{2}{c}{3.392} \\
+ \cmidrule(lr){1-7}
+ \makecell{WGAN\\\scriptsize{NFE= 1}}
+ & \makecell{0.2904\\\scriptsize(0.1112)} & \makecell{0.7316\\\scriptsize(0.0622)}
+ & \makecell{0.3603\\\scriptsize(0.0472)} & \makecell{0.8110\\\scriptsize(0.0769)}
+ & \makecell{0.4562\\\scriptsize(0.1310)} & \makecell{0.9292\\\scriptsize(0.0829)} \\
+~~~~~~Time  & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} \\
+ \cmidrule(lr){1-7}
+ \makecell{FM\\\scriptsize{NFE= 20}}
+ & \makecell{0.0712\\\scriptsize(0.0026)} & \makecell{0.5838\\\scriptsize(0.0142)}
+ & \makecell{0.0954\\\scriptsize(0.0030)} & \makecell{0.6422\\\scriptsize(0.0162)}
+ & \makecell{0.0470\\\scriptsize(0.0191)} & \makecell{0.0556\\\scriptsize(0.0168)} \\
+~~~~~~Time  & \multicolumn{2}{c}{0.091} & \multicolumn{2}{c}{0.090} & \multicolumn{2}{c}{0.091} \\
+ \bottomrule
+ \end{tabular}
+
+ \vspace{0.6em}
+
+ \begin{tabular}{l*{3}{cc}}
+ \toprule
+ & \multicolumn{2}{c}{checker2d ($d=2$)} & \multicolumn{2}{c}{helix3d ($d=1$)} & \multicolumn{2}{c}{torus3d ($d=2$)} \\
+ \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+ & $W_2$ $(\downarrow)$ & \% out $(\downarrow)$ & $W_2$ $(\downarrow)$ & \% out $(\downarrow)$ & $W_2$ $(\downarrow)$ & \% out $(\downarrow)$ \\
+ \midrule
+ \makecell{\method{}\\\scriptsize{NFE= 1}}
+ & \makecell{0.0608\\\scriptsize(0.0040)} & \makecell{\textbf{0.0064}\\\scriptsize(0.0029)}
+ & \makecell{\textbf{0.0425}\\\scriptsize(0.0022)} & \makecell{\textbf{0.0938}\\\scriptsize(0.0501)}
+ & \makecell{\textbf{0.0717}\\\scriptsize(0.0049)} & \makecell{\textbf{0.0341}\\\scriptsize(0.0182)} \\
+~~~~~~Time  & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} \\
+ \cmidrule(lr){1-7}
+ \makecell{M-DDIM\\\scriptsize{NFE= 205}}
+ & \makecell{0.0640\\\scriptsize(0.0063)} & \makecell{0.0088\\\scriptsize(0.0040)}
+ & \makecell{0.0536\\\scriptsize(0.0086)} & \makecell{0.2812\\\scriptsize(0.0740)}
+ & \makecell{0.0922\\\scriptsize(0.0123)} & \makecell{0.1208\\\scriptsize(0.0223)} \\
+~~~~~~Time  & \multicolumn{2}{c}{0.615} & \multicolumn{2}{c}{0.664} & \multicolumn{2}{c}{0.616} \\
+ \cmidrule(lr){1-7}
+ \makecell{DPM++ (1s)\\\scriptsize{NFE= 20}}
+ & \makecell{0.0944\\\scriptsize(0.0213)} & \makecell{0.0228\\\scriptsize(0.0205)}
+ & \makecell{0.1115\\\scriptsize(0.0162)} & \makecell{0.3338\\\scriptsize(0.0230)}
+ & \makecell{0.1650\\\scriptsize(0.0223)} & \makecell{0.6453\\\scriptsize(0.0656)} \\
+~~~~~~Time  & \multicolumn{2}{c}{0.141} & \multicolumn{2}{c}{0.183} & \multicolumn{2}{c}{0.137} \\
+ \cmidrule(lr){1-7}
+ \makecell{DPM++ (2m)\\\scriptsize{NFE= 40}}
+ & \makecell{0.0914\\\scriptsize(0.0216)} & \makecell{0.0257\\\scriptsize(0.0195)}
+ & \makecell{0.1056\\\scriptsize(0.0128)} & \makecell{0.3356\\\scriptsize(0.0275)}
+ & \makecell{0.1640\\\scriptsize(0.0221)} & \makecell{0.6344\\\scriptsize(0.0588)} \\
+~~~~~~Time  & \multicolumn{2}{c}{0.261} & \multicolumn{2}{c}{0.362} & \multicolumn{2}{c}{0.276} \\
+ \cmidrule(lr){1-7}
+ \makecell{DDIM\\\scriptsize{NFE= 1000}}
+ & \makecell{0.1108\\\scriptsize(0.0276)} & \makecell{0.0860\\\scriptsize(0.0407)}
+ & \makecell{0.0883\\\scriptsize(0.0162)} & \makecell{0.3861\\\scriptsize(0.0300)}
+ & \makecell{0.1603\\\scriptsize(0.0269)} & \makecell{0.6699\\\scriptsize(0.0658)} \\
+~~~~~~Time  & \multicolumn{2}{c}{2.760} & \multicolumn{2}{c}{3.709} & \multicolumn{2}{c}{2.934} \\
+ \cmidrule(lr){1-7}
+ \makecell{WGAN\\\scriptsize{NFE= 1}}
+ & \makecell{0.2470\\\scriptsize(0.0646)} & \makecell{0.3107\\\scriptsize(0.3267)}
+ & \makecell{0.2352\\\scriptsize(0.1335)} & \makecell{0.8212\\\scriptsize(0.1933)}
+ & \makecell{0.4036\\\scriptsize(0.0285)} & \makecell{0.7916\\\scriptsize(0.0337)} \\
+~~~~~~Time  & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} & \multicolumn{2}{c}{\makecell{\textbf{0.001}}} \\
+ \cmidrule(lr){1-7}
+ \makecell{FM\\\scriptsize{NFE= 20}}
+ & \makecell{\textbf{0.0592}\\\scriptsize(0.0015)} & \makecell{0.0147\\\scriptsize(0.0047)}
+ & \makecell{0.0533\\\scriptsize(0.0072)} & \makecell{0.1673\\\scriptsize(0.0294)}
+ & \makecell{0.1130\\\scriptsize(0.0074)} & \makecell{0.5557\\\scriptsize(0.0268)} \\
+~~~~~~Time  & \multicolumn{2}{c}{0.090} & \multicolumn{2}{c}{0.099} & \multicolumn{2}{c}{0.092} \\
+ \bottomrule
+ \end{tabular}
+ \end{table}
+ \endgroup
+
+\paragraph{Fidelity, manifold alignment, and speed.}
+Table~\ref{tab:wd_time} shows that \method{} outperforms all diffusion samplers on $W_2$ across all six manifolds, and improves over flow matching on five of six (with \textit{checker2d} essentially tied in $W_2$), while using only a single transport evaluation at sampling time (NFE$=1$).
+\method{} also exhibits the strongest \emph{manifold alignment}: on the thin manifolds \textit{helix3d} and \textit{torus3d} it attains off-manifold rates of $0.0938$ and $0.0341$, compared with $0.1673$/$0.5557$ for flow matching and $0.333$--$0.386$/$0.634$--$0.670$ for diffusion samplers at practical step budgets.
+Finally, \method{} is the fastest high-fidelity method in this suite, generating $10{,}000$ samples in $\approx 10^{-3}$ seconds, while diffusion and ODE-based samplers require tens to thousands of network evaluations.
+
+\smallskip
+\noindent\textbf{Interpretation.}
+Two aspects of the experimental configuration are important for interpreting Table~\ref{tab:wd_time}.
+First, only \method{} and the GAN baseline are dimension-mismatched one-shot generators: \method{} learns $h_{\theta}:\R^d\to\R^D$ with $d\ll D$ (matched to the intrinsic dimension), so samples lie on the $d$-dimensional image of $h_{\theta}$ by construction.
+By contrast, diffusion and ODE baselines model ambient-space dynamics and must learn to contract probability mass in directions normal to the manifold, which can leave residual off-manifold scatter under finite capacity and finite solver steps.
+Second, \method{} is trained at a single smoothing level $t$ (selected by validation), so modeling capacity is focused on matching the fixed-$t$ score that appears in the pull-back bound (Theorem~\ref{thm:vp-tau-linear}); iterative samplers repeatedly apply approximate scores/velocities across many steps, so approximation and discretization errors can accumulate.
+This also helps explain why M-DDIM need not outperform the one-shot \method{} sampler: it repeatedly queries an approximate score estimator (finite $K$) over 205 refinement steps.
+
+Figure~\ref{fig:toyex} shows synthetic samples generated by \method{} across six toy tasks. In all cases, \method{} concentrates probability mass tightly along the underlying data manifold, with only a few outliers near the boundary. Relative to diffusion (DDIM), \method{} produces visibly cleaner manifold support and achieves uniformly lower $W_2$ in Table~\ref{tab:wd_time} while incurring substantially lower sampling cost; relative to flow matching, \method{} is typically better and otherwise similar in fidelity, again at much lower sampling cost.
+
+\begin{figure}[htbp]
+ \centering
+ \safeincludegraphics[width=\linewidth]{img_ma/toy_6x4.png}
+ \caption{Qualitative comparison of generative models on six synthetic manifolds. Each row corresponds to one toy dataset (rings2d, spiral2d, moons2d, checker2d, helix3d, torus3d). Columns show, from left to right, ground-truth samples, \method{} one-shot transport samples, diffusion-model samples generated with DDIM, and flow-matching samples.}
+ \label{fig:toyex}
+\end{figure}
+
+
+\begin{figure}[htbp]
+ \centering
+ \safeincludegraphics[width=\linewidth]{img_ma/knt.png}
+ \caption{Effect of sample size $n$, anchor count $K$, and smoothing level $t$ on \method{} and \method{}--DDIM across six synthetic benchmarks. Curves report Wasserstein distance ($W_2$; lower is better). Consistent with the bias--variance trade-off in Section~\ref{sec:risk}, increasing $n$ and $K$ improves fidelity, while intermediate noise levels provide the most stable performance.}
+ \label{fig:knt}
+ \end{figure}
+
+\paragraph{Sensitivity to sample size, anchor count, and smoothing level for \method{}.}
+Figure~\ref{fig:knt} examines the effect of the training sample size $n$, the number of mixture anchors $K$, and the smoothing level $t$.
+Consistent with the bias--variance trade-off described in Section~\ref{sec:risk}, increasing either $n$ or $K$ reduces the $W_2$ error.
+Performance is most stable at intermediate noise levels: small $t$ amplifies variance in the posterior score estimator, while large $t$ oversmooths the underlying manifold geometry.
+Together, these results support fixed-$t$ training as an effective bias--variance compromise, eliminating the need to integrate a full diffusion trajectory.
+
+\subsection{Real-data benchmarks}
+\label{sec:experiments-real}
+
+\paragraph{Datasets.}
+We evaluate the proposed method on image and tabular/high-dimensional benchmarks.
+\textbf{MNIST} \citep{lecun1998gradient} contains $28\times 28$ grayscale handwritten digits (60{,}000 training, 10{,}000 test).
+\textbf{CIFAR10-0} is the single-class subset of CIFAR-10 \citep{krizhevsky2009learning} containing only class 0 (airplanes), with 5{,}000 training and 1{,}000 test images.
+The single-class setting isolates a single semantic mode and yields a more concentrated distribution, providing a stress test for manifold-aligned generators.
+
+For tabular data, we use \textbf{Superconduct} \citep{hamidieh2018superconduct}, which contains $21{,}263$ samples with $D=81$ numeric features.
+We model the standardized feature vectors and evaluate distributional discrepancy between generated samples and a held-out test split (20\% of the data).
+
+We also consider \textbf{Genomes} from the 1000 Genomes Project \citep{1000genomes2015}.
+Following prior studies \citep{yelmen2023deep,ahronoviz2024genome}, we focus on $D=10{,}000$ biallelic SNPs on chromosome~6 (a 3~Mbp region including HLA genes), encoded as binary sequences.
+We use 4,004 genomes for training and 1,002 for testing (stratified by continental group).
+
+\paragraph{Model architectures.}
+We match capacity within each modality as closely as practical, subject to standard architectures for each baseline.
+
+(1) \textbf{Images (MNIST, CIFAR10-0):} \method{} uses a 5-layer convolutional generator $h_{\theta}$, and the GAN baseline adopts the same generator architecture. Diffusion and flow-matching baselines use a 2D U-Net~\citep{von-platen-etal-2022-diffusers} to parameterize the score (diffusion) and velocity field (flow matching), which is substantially more intricate than our generator network.
+
+(2) \textbf{Superconduct:} All methods use a 5-hidden-layer MLP of width 512 (ReLU). Diffusion and flow matching additionally take a 32-d time embedding as input.
+The GAN generator takes a 64-dimensional latent vector.
+
+(3) \textbf{Genomes:} Diffusion and \method{} use closely matched 1D U-Net backbones, following the architecture used in genomic diffusion~\citep{kenneweg2025generating}. In \method{}, we additionally include a linear projection that maps the low-dimensional latent input into the channel dimension expected by the U-Net.
+
+\paragraph{Baselines and sampler settings.}
+We compare against DDIM \citep{song2020ddim} (diffusion) and flow matching (\textsc{FM}) \citep{lipman2022flow,liu2022flow} as strong iterative baselines, as well as WGAN-GP as a one-shot baseline.
+We run DDIM with 200 denoising steps on the interval $t\in[0.05,0.90]$ with stochasticity parameter $\eta=1.0$.
+For FM, we integrate the learned ODE with a midpoint solver using step size $0.05$ (20 steps, NFE$=20$) on the same time interval.
+For GANs, sampling is one generator forward pass (NFE$=1$); we use a latent dimension that matches \method{} whenever applicable (MNIST: $d=80$, CIFAR10-0: $d=128$, Genomes: $d=128$) and use a 64-dimensional latent for Superconduct, matching the strongest-performing \method{} setting ($d=64$).
+
+\paragraph{\method{} configuration.}
+Table~\ref{tab:real-config} reports the exact \method{} configurations used in our real-data experiments:
+the base latent distribution $\pi$, latent dimension $d$, anchor budget $K$ in the fixed-$t$ score estimator used during training, the candidate smoothing levels $t$, the posterior-estimation variant (MC and MAP), and the validation metric used for model selection.
+Unless otherwise noted, sampling always draws $\U\sim\pi$ and outputs a sample $h_{\theta}(\U)$ in one forward pass. For CIFAR10-0 we adopt \method{}-MAP to stabilize training: at small $t$ the latent posterior becomes sharply concentrated, and the MAP--Laplace proposal yields a substantially higher effective sample size than prior sampling at the same anchor budget.
+We perform model selection using the validation metric reported in the last column of Table~\ref{tab:real-config}.
+The selected configurations are $t=0.3$ for MNIST, $t=0.1$ for CIFAR10-0, $(t,d)=(0.8,64)$ for Superconduct, and $t=0.3$ for Genomes.
+
+
+\begin{table}[t]
+\centering
+\caption{\method{} configuration on real-data benchmarks. We report the base latent distribution $\pi_U$, the \method{} posterior-estimation variant, the anchor budget $K$ in the score estimator, the candidate smoothing levels $t$, the latent dimension $d$, and the validation metric used for model selection.}
+\label{tab:real-config}
+\scriptsize
+\setlength{\tabcolsep}{4.5pt}
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular}{l l c c c c c}
+\toprule
+Dataset & Variant & Base $\pi$ & $K$ & $t$ candidates & $d$ candidates & Selection metric \\
+\midrule
+MNIST 
+& MC 
+& $\cN(0,I_{64})\times \mathrm{Bern}(0.5)^{16}$ 
+& 4096 
+& $\{0.1,0.2,\ldots,0.9\}$ 
+& 80 
+& FID \\
+CIFAR10-0 
+& MAP 
+& $\cN(0,I_{128})$ 
+& 16384 
+& $\{0.01,0.1\}$ 
+& 128 
+& FID \\
+Superconduct 
+& MC 
+& $\cN(0,I_d)$ 
+& 49152 
+& $\{0.1,0.2,\ldots,0.9\}$ 
+& $\{16,32,64\}$ 
+& $W_2$ \\
+Genomes 
+& MC 
+& $\cN(0,I_{128})$ 
+& 2048 
+& $\{0.1,0.2,\ldots,0.9\}$ 
+& 128 
+& $W_2$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+
+\begin{table}[htbp]
+\centering
+\caption{
+Fidelity (FID for image datasets; $W_2$ for tabular datasets) and wall-clock sampling time (in seconds) required to generate the evaluation batch under identical hardware and batching conditions. Lower values indicate better performance for both metrics. Boldface highlights the best fidelity result within each dataset. A dash ("--") denotes that no implementation is available for the corresponding example.}
+\label{tab:mnist_cifar10}
+\small
+\setlength{\tabcolsep}{5pt}
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular}{l l c c c c}
+\toprule
+Dataset & Quantity & \method{} & DDIM & FM & GAN \\
+\midrule
+\multirow{2}{*}{MNIST} 
+& FID $\downarrow$ 
+& \textbf{109.22} & 109.53 & 115.00 & 109.23\\
+& Time (s) $\downarrow$ 
+& 0.25 & 320.63 & 30.18 & 0.19\\
+\midrule
+\multirow{2}{*}{CIFAR10-0} 
+& FID $\downarrow$ 
+& 65.64 & 89.09 & \textbf{61.91} & 159.79\\
+& Time (s) $\downarrow$ 
+& 0.09 & 22.97 & 121.82 & 0.002\\
+\midrule
+\multirow{2}{*}{Superconduct} 
+& $W_2$ $\downarrow$ 
+& \textbf{0.0998} & 0.3982 & 0.1263 & 0.1443\\
+& Time (s) $\downarrow$ 
+& 0.0020 & 0.0974 & 0.0750 & 0.0013\\
+\midrule
+\multirow{2}{*}{Genomes} 
+& $W_2$ $\downarrow$ 
+& \textbf{0.1688} & 0.2993 & -- & 0.4911\\
+& Time (s) $\downarrow$ 
+& 1.63 & 980.34 & -- & 0.11\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Quantitative results and interpretation.}
+As summarized in Table~\ref{tab:mnist_cifar10}, across all four real-data benchmarks, \method{} consistently surpasses both the diffusion baseline (DDIM) and the GAN baseline in sample fidelity. It delivers the best overall performance on MNIST, Superconduct, and Genomes, and ranks second on CIFAR10-0, narrowly trailing flow matching (FM). Importantly, \method{} requires only a single forward pass through the generator at sampling time (NFE$=1$). This one-shot generation design yields orders-of-magnitude reductions in wall-clock latency relative to iterative diffusion and ODE-based approaches, while maintaining equal or superior fidelity.
+
+On MNIST, \method{} slightly outperforms DDIM in FID (109.22 vs.\ 109.53) while reducing sampling time from 320.63s to 0.25s under our evaluation protocol.
+Relative to flow matching (FM), \method{} improves FID (109.22 vs.\ 115.00) while reducing sampling time from 30.18s to 0.25s.
+On CIFAR10-0, FM attains the best FID (61.91), while \method{} still substantially outperforms DDIM (89.09) and GAN (159.79) in fidelity at dramatically lower cost (0.09s vs.\ 121.82s).
+The GAN baseline is extremely fast in this single-class setting (0.002s) but has substantially worse perceptual fidelity (FID 159.79).
+
+On Superconduct, \method{} achieves the lowest distributional error in $W_2$ (0.0998), improving over FM (0.1263), GAN (0.1443), and the DDIM baseline (0.3982); this corresponds to a $74.9\%$ reduction in $W_2$ relative to DDIM (and $21.0\%$ relative to FM), a substantial gain in tabular fidelity. Sampling is essentially instantaneous (0.0020s).
+On Genomes, \method{} again achieves the lowest $W_2$ (0.1688), with substantial margins over DDIM (0.2993) and GAN (0.4911); this is a $43.6\%$ reduction in $W_2$ relative to DDIM (and $65.6\%$ relative to GAN). These results indicate that the manifold-aligned transport remains effective even in very high ambient dimensions.
+
+Additional representative samples generated by \method{} are provided in Appendix~\ref{appendix_E}.
+
+\paragraph{Empirical performance and underlying mechanisms.}
+\method{} is not merely competitive: in our evaluations it outperforms diffusion baselines and GANs across all benchmarks, and it achieves especially strong reductions in off-manifold leakage on thin manifolds (Table~\ref{tab:wd_time}).
+These empirical gains are driven by two structural features of the experimental configuration.
+
+First, \method{} employs a dimension-aligned transport map $h_{\theta}:\mathbb{R}^d\to\mathbb{R}^D$, so every generated sample lies in the $d$-dimensional image of $h_{\theta}$ by construction.
+This built-in support constraint directly targets the leakage captured by the off-manifold rate.
+By contrast, flow and diffusion-based methods must map $\mathbb{R}^D$ to $\mathbb{R}^D$.
+In the manifold regime, these approaches must learn to concentrate probability mass into a lower-dimensional set by contracting in directions normal to the data manifold---a difficult task under finite capacity and finite solver steps that can leave residual off-manifold scatter.
+
+Second, \method{} concentrates learning at a single smoothing level $t$ and matches the smoothed score at that level.
+The pull-back inequality (Theorem~\ref{thm:vp-tau-linear}) bounds Wasserstein generation error by a fixed-level score discrepancy, with a geometry- and $t$-dependent prefactor.
+This perspective explains the empirical bias--variance trade-off in $t$ (Figure~\ref{fig:knt}): very small $t$ produces highly anisotropic scores and high estimator variance, whereas very large $t$ oversmooths geometric structure.
+Selecting an intermediate $t$ via validation therefore focuses modeling capacity precisely where the bound is evaluated, avoiding the accumulation of approximation and discretization error across many time steps.
+Moreover, the anchor-based posterior estimator explicitly averages over latent pre-images consistent with a noisy observation, stabilizing score estimation in normal directions and improving support concentration relative to iterative diffusion/ODE baselines at comparable fidelity.
+
+\section{Discussion}
+\label{sec:discussion}
+
+\method{} shows that a single-level (fixed-$t$) training objective can recover a high-fidelity generator in the manifold regime while retaining one-shot sampling.
+Crucially, by identifying a manifold-induced transport from a low-dimensional latent to the ambient space, \method{} can match and often surpass diffusion-baseline fidelity in practice (e.g., Tables~\ref{tab:wd_time} and \ref{tab:mnist_cifar10}) without learning or simulating a full reverse-time diffusion process:
+generation does not require integrating a long trajectory and therefore avoids the discretization error and stepwise stochastic sampling error that can accumulate in diffusion samplers.
+
+Conceptually, the method decouples support fidelity from the need to simulate an entire reverse-time trajectory.
+By learning a transport map whose induced Gaussian smoothing admits an explicit posterior identity for the score, \method{} turns fixed-$t$ denoising into a practical generative mechanism.
+In this view, the complexity of diffusion-style time-dependent models is replaced by a single, manifold-aligned transport together with a one-shot score evaluation; any remaining approximation stems primarily from the finite-anchor posterior approximation rather than from time discretization.
+
+The smoothing level $t$ plays a dual role.
+Larger $t$ improves numerical stability of score estimation (the posterior over $\U$ is less concentrated) but increases smoothing bias and can blur fine-scale structure.
+Smaller $t$ reduces bias but makes the latent posterior sharply peaked, which stresses finite-anchor approximations.
+Our experiments suggest that an intermediate $t$ often provides the best bias--variance trade-off; developing principled, data-adaptive rules for selecting $t$ (or using a small set of carefully chosen noise levels) is a promising direction.
+
+The anchor approximation is the main computational lever in \method{}.
+Prior sampling is simple and parallelizable, QMC reduces variance for moderate intrinsic dimension, and MAP/Laplace proposals improve effective sample size when the posterior is highly concentrated. A practical limitation is that very small $t$ may require large $K$ to maintain stable weights; further work could explore learned proposals, amortized MAP initializations, or hierarchical anchor banks.
+Finally, \method{} induces an intrinsic density on the learned image manifold (directly computable for generated samples) and, at the fixed smoothing level $t>0$, an ambient density that can be approximated using the same anchor bank. Developing robust procedures for evaluating these quantities on arbitrary observed points (which may require approximate inversion) and for leveraging them for calibrated out-of-distribution scoring remains an open and practically important problem.
+
+More broadly, \method{} suggests that explicitly dimension-mismatched, non-invertible transports can provide a lightweight alternative to diffusion-style modeling when data concentrate near thin supports.
+Rather than fitting a time-dependent score field and sampling it via a discretized reverse-time process, one can learn the manifold-induced transport and use a single-level posterior identity for generation.
+Potential extensions include conditional generation, higher-resolution image benchmarks, and hybrid samplers that use \method{} for initialization followed by a short refinement chain when maximum fidelity is required.
+\newpage
+
+\begin{center}
+    \interlinepenalty=10000
+    \huge\bfseries Appendix
+\end{center}
+
+\appendix
+\section{Experiment details and more results}
+\label{appendix_E}
+
+\subsection{Toy Datasets}
+
+\paragraph{Rings2d.}
+We generate a two-dimensional mixture of concentric rings. First sample a discrete radius index
+$k \sim \Unif\{1,\dots,K\}$ and set the ring radius $r_k$ (e.g., equally spaced radii in a fixed interval).
+Then draw an angle $\theta \sim \Unif[0,2\pi]$ and form the noiseless point
+\[
+x_1 = r_k \cos\theta,\qquad x_2 = r_k \sin\theta.
+\]
+Finally, we add Gaussian jitter $\varepsilon \sim \mathcal{N}(0,\sigma^2 I_2)$ to obtain
+$\mathbf{x}=(x_1,x_2)^\top+\varepsilon$. The noise level $\sigma$ is set by the \texttt{jitter} parameter
+(default $\sigma=0.02$).
+
+\paragraph{Spiral2d.}
+We sample a latent parameter $t \sim \Unif[t_{\min},t_{\max}]$ and construct a planar spiral in polar form.
+Let the radius grow with $t$, e.g., $r(t)=a+bt$ for constants $a,b>0$, and set the angle to be $\theta(t)=t$.
+The noiseless point is
+\[
+x_1 = r(t)\cos t,\qquad x_2 = r(t)\sin t.
+\]
+We then add Gaussian jitter $\varepsilon \sim \mathcal{N}(0,\sigma^2 I_2)$ to obtain
+$\mathbf{x}=(x_1,x_2)^\top+\varepsilon$, with $\sigma$ controlled by \texttt{jitter}.
+
+\paragraph{Moons2d.}
+We generate the standard two-moons dataset consisting of two interleaving semicircles.
+Sample a label $c\in\{0,1\}$ uniformly and draw an angle $\theta\sim\Unif[0,\pi]$.
+For the first moon ($c=0$), set
+\[
+x_1 = \cos\theta,\qquad x_2 = \sin\theta.
+\]
+For the second moon ($c=1$), we apply a shift to create the interleaving structure:
+\[
+x_1 = 1-\cos\theta,\qquad x_2 = 1-\sin\theta - \delta,
+\]
+where $\delta>0$ controls the vertical separation (fixed throughout the experiments).
+As in other settings, we add Gaussian jitter $\varepsilon \sim \mathcal{N}(0,\sigma^2 I_2)$ to obtain
+$\mathbf{x}=(x_1,x_2)^\top+\varepsilon$, with $\sigma$ set by \texttt{jitter}.
+
+
+\paragraph{Checker2d.}
+We generate a two-dimensional checkerboard distribution supported on alternating squares of a regular grid.
+Let $m\in\mathbb{N}$ denote the number of cells per axis and partition $[-1,1]^2$ into an $m\times m$ grid with
+cell width $w = 2/m$. Sample integer indices $(i,j)$ uniformly from $\{0,\ldots,m-1\}^2$ subject to the parity
+constraint $(i+j)\bmod 2 = 0$ (i.e., only the ``black'' squares). Conditional on $(i,j)$, draw a point uniformly
+within the selected cell:
+\[
+x_1 \sim \Unif\!\bigl[-1 + iw,\,-1 + (i+1)w\bigr],\qquad
+x_2 \sim \Unif\!\bigl[-1 + jw,\,-1 + (j+1)w\bigr].
+\]
+Finally, we add Gaussian jitter $\varepsilon \sim \mathcal{N}(0,\sigma^2 I_2)$ to obtain
+$\mathbf{x}=(x_1,x_2)^\top+\varepsilon$, where $\sigma$ is set by the \texttt{jitter} parameter (default $\sigma=0.02$).
+
+
+
+ \paragraph{Helix3d.} 
+ We sample $t \sim \Unif[0,2\pi]$ and define a three-dimensional helix:
+ \[
+ x_1 = \cos(t), \qquad x_2 = \sin(t), \qquad x_3 = t.
+ \]
+ Noise $\varepsilon \sim \mathcal{N}(0, \sigma^2 I_3)$ is added to obtain $\mathbf{x} = (x_1, x_2, x_3)^\top + \varepsilon$.
+
+ \paragraph{Torus3d.} 
+ We sample two independent latent parameters $(u,v) \sim \Unif[0,2\pi]^2$. Given a major radius $R$ and minor radius $r$, the torus embedding in $\mathbb{R}^3$ is
+ \[
+ x_1 = (R + r\cos v)\cos u, \quad 
+ x_2 = (R + r\cos v)\sin u, \quad 
+ x_3 = r\sin v.
+ \]
+ Again, Gaussian jitter $\varepsilon \sim \mathcal{N}(0, \sigma^2 I_3)$ is added. We use $R=2$ and $r=1$.
+
+\subsection{Examples of generated samples}
+In this subsection, we present additional qualitative results to supplement the main quantitative evaluations. We include representative sample grids for MNIST and CIFAR10-0 (airplanes) to visually compare the perceptual quality and diversity of unconditional generations produced by \method{}, diffusion sampling (DDIM), and flow matching.
+
+For the genomic experiment, we provide class-wise two-dimensional PCA visualizations of real test genomes and synthetic genomes generated by \method{} and a diffusion baseline. PCA is fit separately within each class and applied to both real and generated samples from that class, enabling an interpretable comparison of class-conditional structure in the high-dimensional SNP space.
+\begin{figure}[htbp]
+ \centering
+ \safeincludegraphics[width=\linewidth]{img_ma/mnist.png}
+\caption{Unconditional generation on MNIST, comparing samples from \method{}, DDIM, and flow matching (FM), alongside held-out real test images (left to right).}
+ \label{fig:mnist}
+ \end{figure}
+
+ \begin{figure}[htbp]
+ \centering
+ \begin{subfigure}[b]{0.3\textwidth}
+ \centering
+ \safeincludegraphics[width=\linewidth]{img_ma/cifar5.png}
+ \caption{\method{}}
+ \label{fig:img1}
+ \end{subfigure}
+ \hfill
+ \begin{subfigure}[b]{0.3\textwidth}
+ \centering
+ \safeincludegraphics[width=\linewidth]{img_ma/cifar_diff.png}
+ \caption{Diffusion(DDIM)}
+ \label{fig:img2}
+ \end{subfigure}
+ \hfill
+ \begin{subfigure}[b]{0.3\textwidth}
+ \centering
+ \safeincludegraphics[width=\linewidth]{img_ma/cifar_fm.png}
+ \caption{Flow matching}
+ \label{fig:img3}
+ \end{subfigure}
+\caption{Unconditional generation results on CIFAR10-0 (airplanes), comparing \method{} (left) and flow matching (FM) (right).}
+ \label{fig:cifar_comparison}
+ \end{figure}
+
+\begin{figure}[htbp]
+ \centering
+ \safeincludegraphics[width=\linewidth]{img_ma/geno_pca.png}
+\caption{Class-wise PCA projections for five classes, comparing real genomic data with samples generated by \method{} and diffusion-based models.}
+ \label{fig:geno}
+ \end{figure}
+
+
+
+
+
+\section{Proofs in Section 3}
+\label{sec:proofs}
+This appendix gathers the proofs and auxiliary technical lemmas underlying the results presented in Section 3 of the main text.
+
+\begin{proof}[Proof of Theorem~\ref{thm:vp-tau-linear}]
+We work with the VP probability flow with constant schedule $\beta(s)\equiv 1$.
+In the standard time parameter $s\ge 0$, the closed-form coefficients are
+$\alpha(s)=\exp(-s/2)$ and $\sigma^2(s)=1-\exp(-s)$.
+Parameterizing by the noise level $t:=\sigma^2(s)\in(0,1)$ gives
+\begin{equation}\label{eq:Gamma-def}
+s=\Gamma(t):=-\log(1-t),\qquad \alpha_t=\sqrt{1-t},\qquad \sigma_t^2=t.
+\end{equation}
+Set $T:=\Gamma(t)$.
+
+Let $p_s$ and $\tilde p_s$ denote the VP-smoothed densities at time $s$ of
+the data and generator, respectively, so that $p_T=p_t$ and $\tilde p_T=\tilde p_t$.
+Apply Lemma~\ref{lem:pullback-LK} on $[0,T]$ with the identification
+$p_s \leftarrow \tilde p_s$ and $q_s \leftarrow p_s$.
+By symmetry of $W_2$,
+\begin{align*}
+W_2(P_{\bm Y_0},P_{\tilde{\bm Y}_0})
+&=W_2(p_0,\tilde p_0)\\
+&\le \exp\!\Big(\int_0^{T}\!L(s)\,ds\Big)\,W_2(\tilde p_t,p_t)
++\exp\!\Big(\int_0^{T}\!L(s)\,ds\Big)\int_0^{T}\!
+\exp\!\Big(\int_u^{T}(K-L)\Big)\,\dd u\ \sqrt{J_T},
+\end{align*}
+where (with this choice of roles)
+\[
+J_T
+:=\int_{\R^D}\bigl\|\nabla\log \tilde p_t(\bm y)-\nabla\log p_t(\bm y)\bigr\|_2^2\,p_t(\bm y)\,d\bm y
+=\mathcal{J}(p_t\|\tilde p_t).
+\]
+
+With $t\le t_{\max}=c_{\mathrm{tube}}^2\rho_{\M}^2$, we have $\sigma_s^2\le t$ for all $s\in[0,T]$,
+hence $\sigma_s\le c_{\mathrm{tube}}\rho_{\M}$, so tube projections are well-defined along the flow.
+Lemma~\ref{lem:Hessian-C1gamma} applies to both $p_s$ and $\tilde p_s$ and yields
+$\|\nabla^2\log p_s\|_{\mathrm{op}}\vee\|\nabla^2\log \tilde p_s\|_{\mathrm{op}}\le L_\star(s)$
+for all $s\le T$, with
+\[
+L_\star(s):=C_T^{(\gamma)}\frac{\sigma_s^{\gamma-2}}{\alpha_s^{\gamma}}
++\frac{(C_S^{(\gamma)})^2}{1-\theta_t}\frac{\sigma_s^{2\gamma-2}}{\alpha_s^{2\gamma}},
+\qquad
+\theta_t=C_N^{(\gamma)}\frac{t^{\gamma}}{(1-t)^{\gamma}}.
+\]
+Moreover, for the VP flow $\bm v_s(\bm x)= -\tfrac12 \bm x - \nabla\log\rho_s(\bm x)$, we have
+$\|\nabla \bm v_s(\bm x)\|_{\rm op}\le \tfrac12+\|\nabla^2\log\rho_s(\bm x)\|_{\rm op}$, hence
+Assumption~\ref{A:12}(A1) holds with
+\[
+L(s):=\tfrac12+L_\star(s).
+\]
+Finally, by the score-gap growth lemma (Lemma~\ref{lem:score_growth}),
+Assumption~\ref{A:12}(A2) holds with
+\[
+K(s):=\tfrac12+4L_\star(s).
+\]
+In particular, with this choice, $K(s)-L(s)=3L_\star(s)$.
+
+By Lemma~\ref{lem:lsi-chain} with reference measure $\tilde p_t$,
+\[
+W_2(\tilde p_t,p_t)=W_2(p_t,\tilde p_t)
+\le \frac{1}{C_{\mathrm{LSI}}(\tilde p_t)}\,\sqrt{\mathcal{J}(p_t\|\tilde p_t)}
+=\bar C_{\mathrm{LSI}}(t)\,\sqrt{J_T}.
+\]
+Moreover, by Lemma~\ref{prop:lsi-from-prior} applied to $\tilde p_t$,
+\[
+\bar C_{\mathrm{LSI}}(t)=\frac{1}{C_{\mathrm{LSI}}(\tilde p_t)}
+\le \frac{\alpha_t^2 M^2+\sigma_t^2}{\min\{C_{\mathrm{LSI}}(\pi),\,1\}}
+=\frac{(1-t)M^2+t}{\min\{C_{\mathrm{LSI}}(\pi),\,1\}}.
+\]
+
+Change variables $r=\sigma_s^2=1-\exp(-s)$ so that $dr=(1-r)\,ds$ and $\alpha_s^2=1-r$. Then
+\[
+\frac{\sigma_s^{\gamma-2}}{\alpha_s^{\gamma}}=\frac{r^{\gamma/2-1}}{(1-r)^{\gamma/2}},
+\qquad
+\frac{\sigma_s^{2\gamma-2}}{\alpha_s^{2\gamma}}=\frac{r^{\gamma-1}}{(1-r)^{\gamma}},
+\qquad
+ds=\frac{dr}{1-r}.
+\]
+Using $(1-r)^{-a}\le (1-t)^{-a}$ for $r\in[0,t]$ yields
+\[
+\int_0^T L_\star(s)\,ds
+\le \frac{2}{\gamma}C_T^{(\gamma)}\frac{t^{\gamma/2}}{(1-t)^{1+\gamma/2}}
++\frac{1}{\gamma}\frac{(C_S^{(\gamma)})^2}{1-\theta_t}\frac{t^{\gamma}}{(1-t)^{1+\gamma}}
+=: I_\gamma(t).
+\]
+Since $\int_0^T L(s)\,ds=\tfrac12 T+\int_0^T L_\star(s)\,ds$, we obtain the (updated) bound
+\[
+\exp\!\Big(\int_0^T L\Big)
+\le \exp\!\Big(\tfrac12T\Big)\exp\!\big(I_\gamma(t)\big)
+=\frac{\exp\!\big(I_\gamma(t)\big)}{\sqrt{1-t}}
+=: \Phi(t).
+\]
+Also, using $K-L=3L_\star$ and monotonicity of the integral,
+\begin{align*}
+\exp\!\Big(\int_0^T L\Big)\int_0^T \exp\!\Big(\int_u^T (K-L)\Big)\,du
+&\le \Phi(t)\int_0^T \exp\!\Big(3\int_u^T L_\star(r)\,dr\Big)\,du \\
+&\le \Phi(t)\int_0^T \exp\!\big(3I_\gamma(t)\big)\,du \\
+&= T\,\frac{\exp\!\big(4I_\gamma(t)\big)}{\sqrt{1-t}}
+=: \Psi(t),
+\end{align*}
+where $T=\Gamma(t)=-\log(1-t)$.
+
+Under the VP schedule $\sigma_t^2=t$ and $\alpha_t^2=1-t$, Tweedie's formula gives
+\[
+m_{p,t}(\bm y)=\frac{\bm y+t\nabla\log p_t(\bm y)}{\alpha_t},
+\qquad
+m_{\tilde p,t}(\bm y)=\frac{\bm y+t\nabla\log \tilde p_t(\bm y)}{\alpha_t},
+\]
+hence
+\[
+\|m_{p,t}(\bm y)-m_{\tilde p,t}(\bm y)\|_2^2=\frac{t^2}{1-t}\,
+\|\nabla\log p_t(\bm y)-\nabla\log \tilde p_t(\bm y)\|_2^2.
+\]
+Taking expectation under $\bm Y\sim p_t$ shows
+\[
+E_{\mathrm{MAG}}(t)
+=\E_{\bm Y\sim p_t}\|m_{p,t}(\bm Y)-m_{\tilde p,t}(\bm Y)\|_2^2
+=\frac{t^2}{1-t}\,J_T,
+\qquad\text{so}\qquad
+\sqrt{J_T}=\frac{\sqrt{1-t}}{t}\,\sqrt{E_{\mathrm{MAG}}(t)}.
+\]
+
+Combining the pull-back inequality with the $W_2$--Fisher bound yields
+\[
+W_2(P_{\bm Y_0},P_{\tilde{\bm Y}_0})
+\le \Big(\Phi(t)\,\bar C_{\mathrm{LSI}}(t)+\Psi(t)\Big)\,\sqrt{J_T}
+=
+\Big(\Phi(t)\,\bar C_{\mathrm{LSI}}(t)+\Psi(t)\Big)\frac{\sqrt{1-t}}{t}\,\sqrt{E_{\mathrm{MAG}}(t)}.
+\]
+
+Then we show that $C_{\mathrm{PB}}(t)=O(t^{-1})$.
+We can rewrite
+\begin{equation}\label{eq:CPB-rewrite}
+C_{\mathrm{PB}}(t)=\frac{1}{t}\Big(\exp\!\big(I_\gamma(t)\big)\,\bar C_{\mathrm{LSI}}(t)\;+\;\Gamma(t)\,\exp\!\big(4I_\gamma(t)\big)\Big),
+\end{equation}
+and
+\[
+I_\gamma(t)=\frac{A_1\,t^{\gamma/2}}{(1-t)^{1+\gamma/2}}
++\frac{A_2}{1-\theta_t}\frac{t^\gamma}{(1-t)^{1+\gamma}},
+\qquad
+\theta_t=\frac{C_N^{(\gamma)}t^\gamma}{(1-t)^\gamma}.
+\]
+Fix any $t\le 1/2$. Then $(1-t)^{-a}\le 2^a$ for every $a\ge 0$, and
+\[
+\theta_t \le 2^\gamma C_N^{(\gamma)} t^\gamma.
+\]
+In particular, for all sufficiently small $t$ we have $\theta_t\le 1/2$, hence $(1-\theta_t)^{-1}\le 2$.
+Therefore, for all sufficiently small $t$,
+\[
+I_\gamma(t)\;\le\; c_1\,t^{\gamma/2}+c_2\,t^\gamma\;\le\; C\,t^{\gamma/2},
+\]
+for constants $c_1,c_2,C$ depending only on the problem parameters. Hence $I_\gamma(t)\to 0$ as $t\downarrow 0$,
+and in particular
+\[
+\exp\!\big(I_\gamma(t)\big)=1+o(1),\qquad \exp\!\big(4I_\gamma(t)\big)=1+o(1).
+\]
+
+Since $(1-t)M^2+t\le M^2+1$, we have
+$\bar C_{\mathrm{LSI}}(t)\le \frac{M^2+1}{\min\{C_{\mathrm{LSI}}(\pi),1\}}=:C_0$,
+so $\bar C_{\mathrm{LSI}}(t)=O(1)$ as $t\downarrow 0$.
+Also, the Taylor expansion gives $\Gamma(t)=-\log(1-t)=t+O(t^2)$.
+So in particular $\Gamma(t)\le 2t$ for all sufficiently small $t$.
+
+Plugging the bounds into \eqref{eq:CPB-rewrite}, for all sufficiently small $t$ we obtain
+\[
+C_{\mathrm{PB}}(t)
+\le \frac{1}{t}\Big(\exp\!\big(I_\gamma(t)\big)\,C_0 + (2t)\,\exp\!\big(4I_\gamma(t)\big)\Big)
+= \frac{C_0\,\exp\!\big(I_\gamma(t)\big)}{t} + 2\,\exp\!\big(4I_\gamma(t)\big)
+= O(t^{-1}),
+\]
+because $\exp\!\big(I_\gamma(t)\big)$ and $\exp\!\big(4I_\gamma(t)\big)$ remain bounded and tend to $1$ as $t\downarrow 0$.
+\end{proof}
+
+\bigskip
+
+\begin{proof}[Proof of Theorem~\ref{thm:score-matching}]
+Let $\X_i:=(\Y_t^{\,i},\Y_0^{\,i})$, $i=1,\ldots,n$, be the i.i.d.\ sample with law $P$, and write
+$P_n f:=n^{-1}\sum_{i=1}^n f(\X_i)$.
+Let $h^{\#}\in\arg\min_{h\in\mathcal H}R(h)$ be a population risk minimizer over $\mathcal H$ (a best approximation to $h^*$).
+Under \eqref{2approx} we have $\rho^2(h^*,h^{\#})\le\varepsilon^2/4$ and, writing
+$\Delta_K:=\sup_{h,\x}\big|\ell_K(\x;h)-\ell(\x;h)\big|$, also $\Delta_K\le\varepsilon^2/8$.
+
+For $l=0,1,\ldots$ define the shells
+\[
+A_l:=\Bigl\{h\in\mathcal H:\ 2^l\varepsilon^2\le\rho^2(h^*,h)<2^{l+1}\varepsilon^2\Bigr\}.
+\]
+Since $\rho(h^*,\hat h_{\lambda})\ge\varepsilon$ implies $\hat h_{\lambda}\in\cup_{l\ge0}A_l$,
+\[
+\P\bigl(\rho(h^*,\hat h_{\lambda})\ge\varepsilon\bigr)
+\le\sum_{l=0}^\infty \P^{*}\bigl(\hat h_{\lambda}\in A_l\bigr).
+\]
+
+Because $\hat h_{\lambda}\in\arg\min_{h\in\mathcal H}P_n\ell_K(\cdot;h)$,
+\[
+P_n\bigl(\ell_K(\cdot;h^{\#})-\ell_K(\cdot;\hat h_{\lambda})\bigr)\ge0.
+\]
+Hence, on the event $\{\hat h_{\lambda}\in A_l\}$,
+\[
+\sup_{h\in A_l} P_n\bigl(\ell_K(\cdot;h^{\#})-\ell_K(\cdot;h)\bigr)\ge0.
+\]
+For any $h\in A_l$, using the definition of $\rho^2$ and the uniform error bound $\Delta_K$,
+\begin{align*}
+\E\bigl(\ell_K(\cdot;h^{\#})-\ell_K(\cdot;h)\bigr)
+&=\E\bigl(\ell(\cdot;h^{\#})-\ell(\cdot;h)\bigr)
++\E\bigl(\ell_K-\ell\bigr)(\cdot;h^{\#})
+-\E\bigl(\ell_K-\ell\bigr)(\cdot;h)\\
+&\le -\bigl(R(h)-R(h^{\#})\bigr)+2\Delta_K\\
+&=-\bigl(\rho^2(h^*,h)-\rho^2(h^*,h^{\#})\bigr)+2\Delta_K\\
+&\le -\bigl(2^l-\tfrac14\bigr)\varepsilon^2+2\Delta_K
+\le -\bigl(2^l-\tfrac12\bigr)\varepsilon^2.
+\end{align*}
+Therefore,
+\[
+\P^{*}\bigl(\hat h_{\lambda}\in A_l\bigr)
+\le
+\P^{*}\Bigl(
+\sup_{h\in A_l}\nu_n\!\bigl(\ell_K(\cdot;h^{\#})-\ell_K(\cdot;h)\bigr)
+\ge \sqrt n\,(2^l-\tfrac12)\varepsilon^2
+\Bigr),
+\]
+where $\nu_n(f):=\sqrt n\,(P_n-P)f$.
+
+To apply Lemma~\ref{large-d} to each set $A_l$, set
+\[
+M_l:=\sqrt n\,(2^l-\tfrac12)\varepsilon^2,
+\qquad
+v_l^2:=8c_v\,2^{l+1}\varepsilon^2.
+\]
+By Lemma~\ref{Variance} and the triangle inequality,
+$\sup_{h\in A_l}\Var\bigl(\ell(\cdot;h)-\ell(\cdot;h^\star)\bigr)\le v_l^2$.
+Since $\ell_K-\ell$ is uniformly bounded by $\Delta_K$ and $\Delta_K\le\varepsilon^2/8$, the same bound (up to an absolute numerical factor absorbed into $c_v$) holds for $\ell_K(\cdot;h)-\ell_K(\cdot;h^\star)$.
+Moreover, the centered class satisfies Bernstein's condition with constant $c_b$ by Lemma~\ref{sub-Gaussian} (again unaffected by a uniformly bounded perturbation).
+
+With $k\ge c_b/(4c_v)$, the mean--variance condition \eqref{mean-var} in Lemma~\ref{large-d} holds for $(M_l,v_l^2)$, and the entropy condition \eqref{entropy} implies \eqref{entropy0} uniformly over $l\ge0$ (the least favorable case is $l=0$).
+Thus Lemma~\ref{large-d} yields
+\begin{align*}
+\P^{*}\Bigl(
+\sup_{h\in A_l}\nu_n\!\bigl(\ell_K(\cdot;h^\star)-\ell_K(\cdot;h)\bigr)
+\ge M_l
+\Bigr)
+&\le 3\exp\!\left(-(1-k)\,\frac{M_l^{2}}{2\left[4v_l^2+M_l c_b/(3\sqrt n)\right]}\right)\\
+&\le 3\exp\!\left(-(1-k)\,\frac{(2^l-\tfrac12)^2 n\varepsilon^2}{(64c_v+\frac{2c_b}{3})\,2^{l+1}}\right).
+\end{align*}
+Summing over $l\ge0$ gives
+\[
+\P\!\bigl(\rho(h^*,\hat h_{\lambda})\ge\varepsilon\bigr)
+\le 4\exp\!\bigl(-c_e n\varepsilon^2\bigr),
+\qquad
+c_e=\frac{1-k}{8(64c_v+\frac{2c_b}{3})}.
+\]
+This completes the proof.
+\end{proof}
+
+
+
+
+\begin{proof}[Proof of Theorem \ref{thm:acc}]
+The result follows by combining Theorems~\ref{thm:vp-tau-linear} and~\ref{thm:score-matching} with the approximation and estimation bounds in Theorems~\ref{app:thm-approx-error} and~\ref{app:thm-estimation-error}.
+\end{proof}
+
+
+\begin{proof}[Proof of Corollary~\ref{cor:explicit-n-rate-gamma}]
+Recall the definitions
+\[
+b:=\frac{\eta+1}{2\eta},\qquad
+\kappa:=\frac{b}{\frac{2(\eta+1)}{d^*}+2b},\qquad
+r:=\frac{2(\eta+1)}{d^*}\,\kappa=\frac{\eta+1}{2\eta+d^*}.
+\]
+By the choice of $W$ and $L$,
+\[
+(WL)^{-\frac{2(\eta+1)}{d^*}}
+=\Bigl(\bigl(n/\log^5 n\bigr)^{\kappa}\Bigr)^{-\frac{2(\eta+1)}{d^*}}
+=\Bigl(\frac{n}{\log^5 n}\Bigr)^{-r}.
+\]
+Moreover, since $\kappa\in(0,1)$ for every $d^*\ge1$ and $\eta>0$, we have
+$WL\le n$ for all $n\ge3$, hence $\log(WL)\le \log n$. Therefore,
+\begin{align*}
+\Bigl(\frac{(WL)^2\log^5(WL)}{n}\Bigr)^{b}
+&\le
+\Bigl(\frac{(WL)^2\log^5 n}{n}\Bigr)^{b}
+=
+\Bigl(\frac{\bigl(n/\log^5 n\bigr)^{2\kappa}\,\log^5 n}{n}\Bigr)^{b}
+=
+\Bigl(\frac{n}{\log^5 n}\Bigr)^{-\,b(1-2\kappa)}.
+\end{align*}
+Finally, by the definition of $\kappa$,
+\[
+r=\frac{2(\eta+1)}{d^*}\kappa
+=\frac{2(\eta+1)}{d^*}\cdot\frac{b}{\frac{2(\eta+1)}{d^*}+2b}
+=b\Bigl(1-2\kappa\Bigr),
+\]
+so the two $WL$-dependent terms decay at the same rate
+$\bigl(\frac{n}{\log^5 n}\bigr)^{-r}$, which proves the stated bound.
+\end{proof}
+
+
+\subsection{Approximation error}
+
+\begin{theorem}[Approximation error]
+\label{app:thm-approx-error}
+Let $s_t(\cdot;h):=\nabla\log p_{Y_t}^h(\cdot)$ and $s_t^\star(\cdot):=s_t(\cdot;h^*)=\nabla\log p_{Y_t}^{h^*}(\cdot)$.
+Suppose $h^{\star}\sim C^{\eta+1}(\mathcal{U},B)$ with a bounded support $\mathcal{U}$, given $K$ and $\mathcal{H}:=\mathrm{NN}(\mathbb{W},\mathbb{L},\mathrm{B})$ with $\mathbb{W}=c_W W\log W$ and $\mathbb{L}=c_L L\log L$, we can bound the approximation error 
+\begin{equation}
+\inf_{h\in \mathcal{H}}\E\|\widetilde s_{t,K}(\Y_t;h,\pi,\pi)-s_t^\star(\Y_t)\|_2^2\lesssim \frac{\alpha_t^2}{\sigma_t^4}(WL)^{\frac{-2(\eta+1)}{d^*}} + \varepsilon(\tilde{\pi},t,K).
+\end{equation}
+\end{theorem}
+\begin{proof}
+Fix $h\in\mathcal H$ and consider the $K$-anchor estimator $\widetilde s_{t,K}(\cdot;h,\pi,\pi)$ in~\eqref{eq:score-estimator}. By $(a+b)^2\le 2a^2+2b^2$,
+\begin{align*}
+\E\bigl\|\widetilde s_{t,K}(\Y_t;h,\pi,\pi)-s_t^\star(\Y_t)\bigr\|_2^2
+&\le 2\,\E\bigl\|\widetilde s_{t,K}(\Y_t;h,\pi,\pi)-s_t(\Y_t;h)\bigr\|_2^2\\
+&\quad+2\,\E\bigl\|s_t(\Y_t;h)-s_t^\star(\Y_t)\bigr\|_2^2.
+\end{align*}
+The first term is the Monte Carlo approximation error and is bounded by the results in Section 4, yielding the $\varepsilon(\tilde{\pi},t,K)$ form. The second term is controlled by (i) the approximation rate of $h^*$ by networks in $\mathcal H$ when $h^*\in\mathcal C^{\eta+1}(\mathcal U,B)$ in Lemma~\ref{l_approx_nn} and (ii) the score perturbation bound in Lemma~\ref{thm:score-perturb}, which turns a uniform approximation error on $h$ into an $L^2$ error on the induced score. Taking the infimum over $h\in\mathcal H$ yields the claimed bound.
+\end{proof}
+
+\begin{lemma}[Fr\'echet derivative of the score w.r.t.\ $h$]\label{lem:DhF}
+Fix a noise level $t\in(0,1)$ with $\alpha_t>0$ and $\sigma_t>0$.
+Let $(\mathcal U,\mathcal A,\pi)$ be a probability space
+and let $h:\mathcal U\to\mathbb R^D$ be measurable with $\E_\pi\|h(\bm U)\|<\infty$.
+Set $a(\bm u):=\alpha_t\,h(\bm u)$ and define the smoothed density
+\[
+p_{\bm Y_t}^h(\bm x)=\int \phi_{\sigma_t}\!\bigl(\bm x-a(\bm u)\bigr)\,\pi(d\bm u),\qquad
+\phi_{\sigma_t}(z)=(2\pi\sigma_t^2)^{-D/2}\exp\!\bigl(-\|z\|^2/(2\sigma_t^2)\bigr).
+\]
+Define the induced score at level $t$ by
+$s_t(\bm x;h):=\nabla_{\bm x}\log p_{\bm Y_t}^h(\bm x)$.
+Let
+\[
+r_h(\bm u\mid \bm x):=\frac{\phi_{\sigma_t}(\bm x-a(\bm u))}{\int \phi_{\sigma_t}(\bm x-a(v))\,\pi(d v)},\qquad
+m_h(\bm x):=\int a(\bm u)\,r_h(\bm u\mid \bm x)\,\pi(d\bm u)=\E[a(\bm U)\mid \bm Y_t=\bm x],
+\]
+where $\bm Y_t=\alpha_t h(\bm U)+\sigma_t \bm Z$ with $\bm U\sim\pi$ and $\bm Z\sim\mathcal N(0,\bm{I}_D)$.
+Then for any direction $\delta h\in L^\infty(\pi;\R^D)$ the Fr\'echet derivative exists and
+\begin{equation}\label{eq:DhF}
+D_h s_t(\bm x;h)[\delta h]
+=\frac{\alpha_t}{\sigma_t^2}\int r_h(\bm u\mid \bm x)\Bigl[I_D+\frac{(a(\bm u)-m_h(\bm x))(\bm x-a(\bm u))^\top}{\sigma_t^2}\Bigr]\delta h(\bm u)\,\pi(d\bm u).
+\end{equation}
+\end{lemma}
+\begin{proof}
+Differentiate $p_{\bm Y_t}^h(\bm x)=\int \phi_{\sigma_t}(\bm x-a(\bm u))\pi(d\bm u)$ in $\bm x$:
+\[
+\nabla_{\bm x}\log p_{\bm Y_t}^h(\bm x)
+=\frac{\int (a(\bm u)-\bm x)\phi_{\sigma_t}(\bm x-a(\bm u))\pi(d\bm u)}{\sigma_t^2\int \phi_{\sigma_t}(\bm x-a(\bm u))\pi(d\bm u)}
+=\frac{m_h(\bm x)-\bm x}{\sigma_t^2},
+\]
+so it suffices to differentiate $m_h(\bm x)$ with respect to $h$.
+Consider the numerator and denominator
+\[
+N(\bm x):=\int a(\bm u)\,\phi_{\sigma_t}(\bm x-a(\bm u))\,\pi(d\bm u),\qquad
+D(\bm x):=\int \phi_{\sigma_t}(\bm x-a(\bm u))\,\pi(d\bm u)=p_{\bm Y_t}^h(\bm x),
+\]
+so $m_h(\bm x)=N(\bm x)/D(\bm x)$.
+For a perturbation $\delta h$, write $\delta a=\alpha_t\,\delta h$ and apply the quotient rule:
+\[
+\delta m_h(\bm x)=\frac{\delta N(\bm x)}{D(\bm x)}-\frac{N(\bm x)}{D(\bm x)^2}\,\delta D(\bm x).
+\]
+A direct differentiation of the Gaussian factor yields
+\[
+\delta D(\bm x)=\int \phi_{\sigma_t}(\bm x-a(\bm u))\frac{(\bm x-a(\bm u))^\top}{\sigma_t^2}\,\delta a(\bm u)\,\pi(d\bm u),
+\]
+and similarly
+\[
+\delta N(\bm x)=\int \Bigl[I_D+\frac{a(\bm u)(\bm x-a(\bm u))^\top}{\sigma_t^2}\Bigr]\phi_{\sigma_t}(\bm x-a(\bm u))\,\delta a(\bm u)\,\pi(d\bm u).
+\]
+Combining the last three displays, using $r_h(\bm u\mid \bm x)=\phi_{\sigma_t}(\bm x-a(\bm u))/D(\bm x)$ and $m_h(\bm x)=N(\bm x)/D(\bm x)$, we obtain
+\[
+\delta m_h(\bm x)
+=\int r_h(\bm u\mid \bm x)\Bigl[I_D+\frac{(a(\bm u)-m_h(\bm x))(\bm x-a(\bm u))^\top}{\sigma_t^2}\Bigr]\delta a(\bm u)\,\pi(d\bm u).
+\]
+Since $s_t(\bm x;h)=(m_h(\bm x)-\bm x)/\sigma_t^2$ and $\delta a=\alpha_t\,\delta h$, this gives \eqref{eq:DhF}.
+Dominated convergence (justified by bounded $\delta h$ and Gaussian envelopes) allows interchanging differentiation and integration.
+\end{proof}
+
+
+
+
+\begin{lemma}[Score perturbation bound under $\|h-h^*\|_\infty$]\label{thm:score-perturb}
+Let $h,h^*:\mathcal U\to\R^D$ and fix $t$ with $\alpha_t>0$ and $\sigma_t>0$.
+Assume $\|h-h^*\|_\infty\le \varepsilon$ (i.e., $\sup_{\bm u}\|h(\bm u)-h^*(\bm u)\|\le\varepsilon$).
+Then 
+\begin{equation}\label{eq:L2bound}
+\big\|s_t(\cdot;h)-s_t(\cdot;h^*)\big\|_{L^2(p_{\bm Y_t}^{h^*})}
+\ \le\ C_D\,\frac{\alpha_t}{\sigma_t^2}\,\varepsilon,
+\qquad
+C_D:=\sqrt{\,2+2\,D(D+2)\,}.
+\end{equation}
+\end{lemma}
+\begin{proof}
+Define the interpolation $h_\upsilon:=h^*+\upsilon(h-h^*)$, $0\le\upsilon\le1$,
+and write $p_\upsilon:=p_{\bm Y_t}^{h_\upsilon}$.
+By the fundamental theorem of calculus and Lemma~\ref{lem:DhF},
+\[
+s_t(\cdot;h)-s_t(\cdot;h^*)=\int_0^1 D_h s_t(\cdot;h_\upsilon)[\,h-h^*\,]\,d\upsilon.
+\]
+By Minkowski and Jensen, for any $\upsilon\in[0,1]$,
+\[
+\|s_t(\cdot;h)-s_t(\cdot;h^*)\|_{L^2(p_\upsilon)}
+\ \le\ \int_0^1 \|D_h s_t(\cdot;h_\mu)[\delta h]\|_{L^2(p_\upsilon)}\,d\mu
+\ \le\ \sup_{\mu\in[0,1]}\|D_h s_t(\cdot;h_\mu)[\delta h]\|_{L^2(p_\upsilon)},
+\]
+where $\delta h:=h-h^*$ and $\|\delta h\|_\infty\le\varepsilon$.
+Using \eqref{eq:DhF} pointwise in $\bm x$, Jensen (for the posterior average), and $\|\delta h\|_\infty\le\varepsilon$,
+\[
+\big\|D_h s_t(\bm x;h_\mu)[\delta h]\big\|
+\le \frac{\alpha_t}{\sigma_t^2}\,\varepsilon\,
+\Bigl\|\ I_D+\frac{(a_\mu(\bm u)-m_\mu(\bm x))(\bm x-a_\mu(\bm u))^\top}{\sigma_t^2}\ \Bigr\|_{\text{op},\,r_\mu(\cdot\mid \bm x)},
+\]
+where $a_\mu(\bm u):=\alpha_t h_\mu(\bm u)$, $r_\mu(\cdot\mid \bm x):=r_{h_\mu}(\cdot\mid \bm x)$, and $m_\mu(\bm x):=m_{h_\mu}(\bm x)$.
+Here $\|\cdot\|_{\text{op},\,r}$ denotes the $r(\cdot\mid \bm x)$-average of the squared operator norm under a square root.
+Bounding $(\alpha+\beta)^2\le 2(\alpha^2+\beta^2)$ and using that the operator norm of a rank-one matrix
+is the product of vector norms,
+\[
+\|M_\mu(\cdot,\bm x)\|_{\mathrm{op},r}^2
+\ \le\ 2\left(1+\frac{1}{\sigma_t^4}\,\E\big[\,\|a_\mu(\bm U)-m_\mu(X)\|^2\,\|X-a_\mu(\bm U)\|^2\ \big|\X=\bm x\,\big]\right).
+\]
+Let $A_\mu(\bm x):=\E[\|a_\mu-m_\mu\|^2\mid \X=\bm x]=\operatorname{tr}\Cov(a_\mu\mid \bm x)$ and
+$B_\mu(\bm x):=\E[\|\X-a_\mu\|^2\mid \X=\bm x]$. Note that $A_\mu(\bm x)\le B_\mu(\bm x)$ because
+$B_\mu(\bm x)=\|\bm x-m_\mu(\bm x)\|^2+A_\mu(\bm x)$. Hence
+\[
+\E_{p_\upsilon}\|M_\mu(\cdot,\bm x)\|_{\mathrm{op},r}^2
+\ \le\ 2\left(1+\frac{1}{\sigma_t^4}\,\E_{p_\upsilon}\big[B_\mu(\X)^2\big]\right).
+\]
+By Jensen, $B_\mu(\X)^2=(\E[\|\X-a_\mu\|^2\mid \X])^2\le \E[\|\X-a_\mu\|^4\mid \X]$, thus
+\[
+\E_{p_\upsilon}\big[B_\mu(\X)^2\big]\ \le\ \E_{p_\upsilon}\|\X-a_\mu(\bm U)\|^4.
+\]
+But conditionally on $\bm U$, $\X-a_\mu(\bm U)=\sigma_t \bm Z$ with $\bm Z\sim\mathcal N(0,\bm{I}_D)$, so
+\[
+\E\|\X-a_\mu(\bm U)\|^4=\sigma_t^4\,\E\|Z\|^4=\sigma_t^4\,D(D+2).
+\]
+Combining the displays and taking square roots,
+\[
+\|D_h s_t(\cdot;h_\mu)[\delta h]\|_{L^2(p_\upsilon)}
+\ \le\ \frac{\alpha_t}{\sigma_t^2}\,\varepsilon\,\sqrt{\,2+2\,D(D+2)\,}.
+\]
+Since this bound is uniform in $\mu$ and $\upsilon$, taking $\upsilon=0$ gives \eqref{eq:L2bound}.
+\end{proof}
+
+
+\subsection{Estimation error}\label{app:subsec-estimation-error}
+
+\begin{lemma} [Variance--mean]\label{Variance}
+Recall that the score model satisfies
+\[
+s_t(\y_t;h)=\frac{\alpha_t m_h(\y_t)-\y_t}{\sigma_t^2},\qquad
+m_h(\y_t):=\E[h(\U)\mid \Y_t=\y_t].
+\]
+Assume $\|h^*\|_{\infty}\leq B$ and $\sup_{h\in\mathcal{H}}\|h\|_{\infty}\leq B$, and define the excess risk
+\[
+\rho^2(h^*,h)=\E\big[\ell_t(\cdot;h)-\ell_t(\cdot;h^*)\big].
+\]
+Then for all sufficiently small $\varepsilon>0$,
+\[
+\sup_{\{\rho(h^*,h)\le \varepsilon:\,h\in\mathcal H\}}
+\Var\!\big(\ell_t(\cdot;h)-\ell_t(\cdot;h^*)\big)
+\le c_v\,\varepsilon^2,
+\]
+with $
+c_v=\frac{40\,\alpha_t^2\,B^2}{\sigma_t^4}$.
+\end{lemma}
+
+\begin{proof}
+By the Gaussian conditional score,
+$\nabla_{\y_t}\log p(\y_t\mid \y_0)=(\alpha_t \y_0-\y_t)/\sigma_t^2$,
+hence
+\[
+s_t(\Y_t;h)-\nabla_{\Y_t}\log p(\Y_t\mid \Y_0)
+=\frac{\alpha_t}{\sigma_t^2}\big(m_h(\Y_t)-\Y_0\big),
+\]
+and therefore
+\[
+\ell_t(\Y_t,\Y_0;h)=\frac{\alpha_t^2}{\sigma_t^4}\|m_h(\Y_t)-\Y_0\|_2^2.
+\]
+Let $m_h:=m_h(\Y_t)$ and $m_0:=m_{h^*}(\Y_t)$ and set $\Delta:=m_h-m_0$.
+Then
+\[
+\ell_t(\cdot;h)-\ell_t(\cdot;h^*)
+=\frac{\alpha_t^2}{\sigma_t^4}\Big(\|\Delta\|_2^2+2\langle \Delta,\,m_0-\Y_0\rangle\Big).
+\]
+Since $m_0(\Y_t)=\E[\Y_0\mid \Y_t]$, we have $\E[m_0-\Y_0\mid \Y_t]=0$, hence
+\[
+\rho^2(h^*,h)=\E[\ell_t(\cdot;h)-\ell_t(\cdot;h^*)]
+=\frac{\alpha_t^2}{\sigma_t^4}\E\|\Delta\|_2^2.
+\]
+By the sup norm of the transport class, $\|m_h\|\le B$, $\|m_0\|\le B$,
+and $\|\Y_0\|\le B$ almost surely, so $\|\Delta\|\le 2B$ and $\|m_0-\Y_0\|\le 2B$.
+Using $(a+b)^2\le 2a^2+2b^2$ and Cauchy--Schwarz,
+\begin{align*}
+\E\Big[\big(\ell_t(\cdot;h)-\ell_t(\cdot;h^*)\big)^2\Big]
+&\le \frac{\alpha_t^4}{\sigma_t^8}
+\E\Big[2\|\Delta\|_2^4+8\|\Delta\|_2^2\|m_0-\Y_0\|_2^2\Big]\\
+&\le \frac{\alpha_t^4}{\sigma_t^8}\Big(2(2B)^2+8(2B)^2\Big)\E\|\Delta\|_2^2\\
+&= \frac{40\,\alpha_t^4B^2}{\sigma_t^8}\E\|\Delta\|_2^2.
+\end{align*}
+Since $\Var(Z)\le \E[Z^2]$, combining with $\E\|\Delta\|_2^2=(\sigma_t^4/\alpha_t^2)\rho^2(h^*,h)$ gives
+\[
+\Var\!\big(\ell_t(\cdot;h)-\ell_t(\cdot;h^*)\big)
+\le \frac{40\,\alpha_t^2B^2}{\sigma_t^4}\,\rho^2(h^*,h).
+\]
+Taking the supremum over $\rho(h^*,h)\le\varepsilon$ yields the claim.
+\end{proof}
+
+
+\begin{lemma}[Bernstein's condition]\label{sub-Gaussian}
+
+With
+$c_b=\frac{16\,\alpha_t^2\,B^2}{\sigma_t^4}$,
+the centered excess-loss class
+\[
+\mathcal F_\varepsilon
+:=\Bigl\{ f_h(\X):=\Delta\ell_h(\X)-\E[\Delta\ell_h(\X)] : 
+\rho(h^*,h)\le \varepsilon,\ h\in\mathcal H\Bigr\},
+\qquad
+\Delta\ell_h:=\ell_t(\cdot;h)-\ell_t(\cdot;h^*),
+\]
+satisfies Bernstein's condition in the following moment form:
+there exists $v^2=v^2(\varepsilon)$ such that $\sup_{f\in\mathcal F_\varepsilon}\Var(f(\X))\le v^2$ and, for all integers $k\ge 2$,
+\begin{equation}\label{eq:bern-moment}
+\sup_{f\in\mathcal F_\varepsilon}\E|f(\X)|^k
+\;\le\;\frac12\,k!\,v^2\,c_b^{\,k-2}.
+\end{equation}
+Moreover, using Lemma~\ref{Variance} (variance--mean), one may take
+\[
+v^2(\varepsilon)=c_v\,\varepsilon^2,
+\qquad\text{where}\qquad
+c_v=\frac{40\,\alpha_t^2\,B^2}{\sigma_t^4}.
+\]
+\end{lemma}
+
+\begin{proof}
+Fix $t\in(0,1)$ and assume the forward perturbation model
+\[
+\Y_0=h^*(\U),\qquad \Y_t=\alpha_t \Y_0+\sigma_t \Z,\qquad \Z\sim\mathcal N(0,I_D),
+\]
+with $\Z$ independent of $\U$. Assume the score model admits the posterior-mean representation
+\[
+s_t(\y_t;h)=\frac{\alpha_t m_h(\y_t)-\y_t}{\sigma_t^2},\qquad 
+m_h(\y_t):=\E[h(\U)\mid \Y_t=\y_t],
+\]
+so that the ideal loss reduces to
+\[
+\ell_t(\Y_t,\Y_0;h)=\frac{\alpha_t^2}{\sigma_t^4}\,\|m_h(\Y_t)-\Y_0\|_2^2.
+\]
+
+
+We have $\|h(\U)\|_2\le B$ a.s.\ and therefore $\|m_h(\Y_t)\|_2=\|\E[h(\U)\mid \Y_t]\|_2\le B$ a.s.
+Also $\|\Y_0\|_2=\|h^*(\U)\|_2\le B$ a.s.
+
+Using the reduced loss form,
+\[
+0\le \ell_t(\cdot;h)=\frac{\alpha_t^2}{\sigma_t^4}\|m_h(\Y_t)-\Y_0\|_2^2
+\le \frac{\alpha_t^2}{\sigma_t^4}(2B)^2.
+\]
+The same bound holds for $\ell_t(\cdot;h^*)$. Thus
+\[
+|\Delta\ell_h|\le \frac{8\alpha_t^2B^2}{\sigma_t^4}
+\quad\Rightarrow\quad
+|f_h|=|\Delta\ell_h-\E\Delta\ell_h|\le \frac{16\alpha_t^2B^2}{\sigma_t^4}=c_b
+\quad\text{a.s.}
+\]
+
+For any centered random variable $f$ with $|f|\le c_b$ almost surely and any integer $k\ge 2$,
+\[
+|f|^k \le c_b^{k-2} f^2
+\quad\Rightarrow\quad
+\E|f|^k \le c_b^{k-2}\E[f^2]=c_b^{k-2}\Var(f).
+\]
+Now let $v^2:=\sup_{f\in\mathcal F_\varepsilon}\Var(f)$. Then for all $k\ge 2$,
+\[
+\sup_{f\in\mathcal F_\varepsilon}\E|f|^k \le v^2\,c_b^{k-2}.
+\]
+Since $\frac12 k!\ge 1$ for all $k\ge 2$, this implies \eqref{eq:bern-moment}.
+
+Finally, Lemma~\ref{Variance} gives on the localized class $\rho(h^*,h)\le\varepsilon$ that
+$\Var(\Delta\ell_h)\le c_v\rho^2(h^*,h)\le c_v\varepsilon^2$, hence
+$\Var(f_h)=\Var(\Delta\ell_h)\le c_v\varepsilon^2$. Therefore one can take $v^2(\varepsilon)=c_v\varepsilon^2$.
+\end{proof}
+
+
+\begin{theorem}[Estimation Error]
+\label{app:thm-estimation-error}
+Suppose $\mathcal{H}=\mathrm{NN}(W,L)$, then there exists $c_{NN}>0$, such that 
+\begin{equation}
+\varepsilon\geq \min_{\delta\geq 1, \zeta\geq 1}\max\left\{c_{NN}\left(\frac{W^2L^2\log^{5}(WL)}{c^2_hn}\right)^{\frac{2}{2-\delta}} 
++\left( \frac{C^2_{t,\zeta}}{c_h^2n}\right)^{\frac{2}{2-\delta(1-\frac{D}{2\zeta})}}
+\right\} 
+\end{equation}
+satisfies the integral entropy equation \eqref{entropy}.
+\end{theorem}
+
+\begin{proof}
+Consider solving the entropy equation.
+\[
+\int_{k\varepsilon^2/16}^{4 c^{1/2}_{v} \varepsilon}\,H_B^{1/2}(u,{\cal L})\,du \leq c_{h} n^{1/2}\,\varepsilon^2.
+\]
+
+Note that we have the $\mathcal{L}\subset C^{\zeta}([-R_t,R_t]^{D},\frac{\alpha_t}{\sigma^{\zeta+4}_t})$ with $R_t\asymp \sigma_t\log n$. The entropy for the smooth class is bounded by $H_B^{1/2}(u,{\cal L})\lesssim \frac{1}{\sigma^{\zeta+4}_t}u^{-D/(2\zeta)}$. Then we only need to solve the following sufficient condition for $\varepsilon$, for a fixed $1\leq \delta < 2$,
+
+\begin{align*}
+c_{h} n^{1/2} \varepsilon^2\geq \int_{k\varepsilon^2/16}^{\varepsilon^{\delta}}
+H_B^{1/2}(u,{\cal L}) \mathrm{d}u + \int_{\varepsilon^{\delta}}^{\infty} H_B^{1/2}(u, C^{\zeta}([-R_t,R_t]^{D},\frac{1}{\sigma^{\zeta+4}_t})) \mathrm{d}u 
+\end{align*}
+Then we shows an upper bounds for the right side.
+For the first term, we can show
+\begin{align*}
+\int_{k\varepsilon^2/16}^{\varepsilon^{\delta}}
+H_B^{1/2}(u,{\cal L}) \mathrm{d}u\leq \varepsilon^{\delta}H_B^{1/2}(k\varepsilon^2/16,{\cal L})
+\end{align*}
+For the second term, let $C_{t,\zeta}:=\frac{1}{\sigma^{\zeta+4}_t}$ and assume $D/(2\zeta)>1$,
+\begin{align*}
+\int_{\varepsilon^{\delta}}^{\infty} H_B^{1/2}(u, C^{\zeta}([-R_t,R_t]^{D},\frac{1}{\sigma^{\eta+4}_t})) \mathrm{d}u \leq C_{t,\zeta}\varepsilon^{\delta(1-\frac{D}{2\zeta})}
+\end{align*}
+
+Combine the two bounds, we have the entropy inequality,
+\begin{equation}
+c_hn^{1/2}\varepsilon^2\geq \varepsilon^{\delta}H_B^{1/2}(k\varepsilon^2/16,{\cal L}) + C_{t,\zeta}\varepsilon^{\delta(1-\frac{D}{2\zeta})}.
+\end{equation}
+Then use the Lipschitz transfer lemma (Lemma \ref{lem:Lip-transfer}) and plug in the entropy bound for the NN class in Lemma \ref{lem:cover-H}, we get the bound that
+\begin{equation}
+\varepsilon\geq \min_{\substack{1\leq \delta< 2\\ \zeta\geq 1}}\left\{c_{NN}\left(\frac{W^2L^2\log^{5}(WL)}{c^2_hn}\right)^{\frac{1}{2(2-\delta)}} 
++\left( \frac{C^2_{t,\zeta}}{c_h^2n}\right)^{\frac{1}{2(2-\delta(1-\frac{D}{2\zeta}))}}
+\right\}.
+\end{equation}
+Let $\zeta=\frac{D(\eta+2)}{d^*}$ and $\delta=\frac{\eta+2}{\eta+1}$. Note that $\frac{D}{2\zeta}=\frac{d^*}{2(\eta+2)}$, so the assumption $\frac{D}{2\zeta}>1$ holds whenever $d^*>2(\eta+2)$. We can get the target that
+\begin{equation}
+\varepsilon\gtrsim \left(\frac{W^2L^2\log^{5}(WL)}{c^2_hn}\right)^{\frac{\eta+1}{2\eta}} 
++\frac{n^{-\frac{\eta+1}{2\eta+d^*}}}{c_h\sigma_t^{4+\frac{D}{d^*}(\eta+2)}}.
+\end{equation}
+\end{proof}
+
+\begin{lemma}[Lipschitz transfer w.r.t.\ centers]
+\label{lem:Lip-transfer}
+Fix $\|\x\|\le R_x$ and suppose $\|\y_i\|,\|\y'_i\|\le R_y$ for all $i$. Define
+\[
+g_{\y}(\x)=\frac{\x}{\sigma^2}-\frac{1}{\sigma^2}\sum_{i=1}^K w_i(\x;\y)\,\y_i,
+\qquad
+w(\x;\y)=\mathrm{softmax}\!\Big(s(\x;\y)\Big),
+\quad
+s_i(\x;\y):=-\frac{\|\x-\y_i\|^2}{2\sigma^2}.
+\]
+Then
+\[
+\|g_{\y}(\x)-g_{\y'}(\x)\|
+\;\le\;
+\frac{C_0}{\sigma^2}\,\|\y-\y'\|_{\infty,K},
+\qquad
+C_0:=1+\frac{R_y(R_x+R_y)}{\sigma^2}.
+\]
+Thus, with $B:=\frac{R_x+R_y}{\sigma^2}+R_x$,
+\[
+|f_{\y}(\x)-f_{\y'}(\x)|
+\;\le\;
+2\,B\,\frac{C_0}{\sigma^2}\,\|\y-\y'\|_{\infty,K}.
+\]
+\end{lemma}
+
+\begin{proof}
+Write
+$
+g_{\y}(\x)-g_{\y'}(\x)
+=
+-\frac{1}{\sigma^2}\left(\sum_{i=1}^K w_i(\x;\y)\,\y_i-\sum_{i=1}^K w_i(\x;\y')\,\y'_i\right)$.
+Add and subtract $\sum_i w_i(\x;\y')\,\y_i$ to obtain
+\[
+\sum_{i=1}^K w_i(\x;\y)\,\y_i-\sum_{i=1}^K w_i(\x;\y')\,\y'_i
+=
+\sum_{i=1}^K w'_i(\y_i-\y'_i)
++\sum_{i=1}^K (w_i-w'_i)\y_i,
+\]
+where $w_i:=w_i(\x;\y)$ and $w'_i:=w_i(\x;\y')$.
+Therefore,
+\begin{align*}
+\|g_{\y}(\x)-g_{\y'}(\x)\|
+&\le \frac{1}{\sigma^2}\left\|\sum_{i=1}^K w'_i(\y_i-\y'_i)\right\|
+      +\frac{1}{\sigma^2}\left\|\sum_{i=1}^K (w_i-w'_i)\y_i\right\|\\
+&\le \frac{1}{\sigma^2}\sum_{i=1}^K w'_i\|\y_i-\y'_i\|
+      +\frac{1}{\sigma^2}\sum_{i=1}^K |w_i-w'_i|\,\|\y_i\|\\
+&\le \frac{1}{\sigma^2}\|\y-\y'\|_{\infty,K}
+      +\frac{R_y}{\sigma^2}\|w-w'\|_1.
+\end{align*}
+
+Then we bound $\|w-w'\|_1$ by $\|s-s'\|_\infty$.
+For softmax $w_i=\exp(s_i)/\sum_j \exp(s_j)$, the Jacobian satisfies
+\[
+\frac{\partial w_i}{\partial s_j}=w_i(\mathbf 1\{i=j\}-w_j).
+\]
+For any direction $a\in\R^K$, the directional derivative is
+$
+(Ja)_i = w_i\Big(a_i-\sum_{j=1}^K w_j a_j\Big)$.
+Hence
+\begin{align*}
+\|Ja\|_1
+&=\sum_{i=1}^K w_i\left|a_i-\sum_{j=1}^K w_j a_j\right|
+\le \sum_{i=1}^K w_i\Big(|a_i|+\Big|\sum_{j=1}^K w_j a_j\Big|\Big)\\
+&\le \sum_{i=1}^K w_i\big(\|a\|_\infty+\|a\|_\infty\big)
+=2\|a\|_\infty.
+\end{align*}
+By the mean value theorem applied to the smooth map $s\mapsto \mathrm{softmax}(s)$ along the segment
+$s_\tau = s' + \tau(s-s')$, $\tau\in[0,1]$, we get
+\[
+\|w-w'\|_1
+\le \sup_{\tau\in[0,1]} \|J(s_\tau)(s-s')\|_1
+\le 2\|s-s'\|_\infty.
+\]
+
+Next, we bound $\|s-s'\|_\infty$ in terms of $\|\y-\y'\|_{\infty,K}$.
+For each $i$,
+\begin{align*}
+|s_i(\x;\y)-s_i(\x;\y')|
+&=\frac{1}{2\sigma^2}\Big|\|\x-\y_i\|^2-\|\x-\y'_i\|^2\Big|\\
+&\le \frac{1}{2\sigma^2}\,\|\y_i-\y'_i\|\,\big(\|\x-\y_i\|+\|\x-\y'_i\|\big)\\
+&\le \frac{1}{2\sigma^2}\,\|\y_i-\y'_i\|\,(R_x+R_y+R_x+R_y)
+= \frac{R_x+R_y}{\sigma^2}\,\|\y_i-\y'_i\|.
+\end{align*}
+Taking the maximum over $i$ gives
+\[
+\|s-s'\|_\infty \le \frac{R_x+R_y}{\sigma^2}\,\|\y-\y'\|_{\infty,K}.
+\]
+Combining,
+\[
+\|w-w'\|_1
+\le 2\|s-s'\|_\infty
+\le 2\frac{R_x+R_y}{\sigma^2}\,\|\y-\y'\|_{\infty,K}.
+\]
+Plugging into the earlier estimate for $\|g_{\y}(\x)-g_{\y'}(\x)\|$ yields
+\[
+\|g_{\y}(\x)-g_{\y'}(\x)\|
+\le \frac{1}{\sigma^2}\left(1+2\frac{R_y(R_x+R_y)}{\sigma^2}\right)\|\y-\y'\|_{\infty,K}.
+\]
+
+Finally, using
+$
+\big|\|a\|^2-\|b\|^2\big|\le (\|a\|+\|b\|)\,\|a-b\|$
+with $a=g_{\y}(\x)-\x$ and $b=g_{\y'}(\x)-\x$, we obtain
+\[
+|f_{\y}(\x)-f_{\y'}(\x)|
+\le (\|g_{\y}(\x)-\x\|+\|g_{\y'}(\x)-\x\|)\,\|g_{\y}(\x)-g_{\y'}(\x)\|.
+\]
+Under $\|\x\|\le R_x$ and $\|\y_i\|\le R_y$, we have
+\[
+\|g_{\y}(\x)\|
+\le \frac{\|\x\|}{\sigma^2}+\frac{1}{\sigma^2}\sum_i w_i\|\y_i\|
+\le \frac{R_x+R_y}{\sigma^2},
+\]
+so $\|g_{\y}(\x)-\x\|\le \frac{R_x+R_y}{\sigma^2}+R_x=:B$, and similarly for $\y'$.
+Therefore,
+\[
+|f_{\y}(\x)-f_{\y'}(\x)|
+\le 2B\,\|g_{\y}(\x)-g_{\y'}(\x)\|
+\le 2B\,\frac{C_0}{\sigma^2}\,\|\y-\y'\|_{\infty,K}.
+\]
+\end{proof}
+
+
+\begin{lemma}[Empirical $L_\infty$ covering of $\cH$]
+\label{lem:cover-H}
+Let $\cH=\cH(W,L)$ be ReLU networks of depth $L$ and width $W$, with output dimension $d_y$ and range bound $\|h(u)\|\le R_h$. Then for any finite set $\{U_i\}_{i=1}^K$ and any $\eta\in(0,2R_h]$,
+\[
+\log \cN\!\Big(\eta, \cH,\ \|\cdot\|_{\infty,K}\Big)
+\ \le\ C_1\,d_y\,\mathrm{Pdim}(\cH)\;\log\!\Big(\frac{C_2 R_h}{\eta}\Big),
+\]
+where $\mathrm{Pdim}(\cH)$ is the pseudo-dimension of the (scalar-output) network class and
+$C_1,C_2$ are universal constants. For ReLU nets, 
+\[
+\mathrm{Pdim}(\cH)\ \le\ C_3\, W L \log(eW),
+\]
+hence
+\[
+\log \cN\!\Big(\eta,\ \cH,\ \|\cdot\|_{\infty,K}\Big)
+\ \le\ C\, d_y\, W L \log(eW)\;\log\!\Big(\frac{C' R_h}{\eta}\Big).
+\]
+\end{lemma}
+
+\begin{proof}
+Apply Thm. 12.5 of \cite{anthony2009neural} to each coordinate class
+$\{u\mapsto h_\ell(u)\}$, use the range bound to normalize, and union bound over $d$ coordinates
+to pass from scalar to vector outputs under $\ell_\infty$ on the sample. The pseudo-dimension upper
+bound for piecewise-linear nets is from \citet{bartlett2019nearly}.
+\end{proof}
+
+\section{Auxiliary lemmas}
+
+\begin{lemma}[LSI condition]
+\label{prop:lsi-from-prior}
+Assume the latent prior $\pi$ satisfies a log--Sobolev inequality with constant $C_{\mathrm{LSI}}(\pi)>0$
+(e.g., $\pi=\mathcal{N}(0,I_d)$ gives $C_{\mathrm{LSI}}(\pi)=1$).
+Fix any $h\in\mathcal{H}$ and define $\tilde \Y_0=h(\U)$ with $\U\sim\pi$ and $\tilde \Y_t=\alpha_t \tilde \Y_0+\sigma_t \bm Z$ with $\bm Z\sim\mathcal{N}(0,\bm{I}_D)$ independent.
+Under Assumption~\ref{G1}, the map $h$ is $M$--Lipschitz, and $q_t$ satisfies a log--Sobolev inequality with
+\begin{equation}
+\label{eq:lsi-qt-explicit}
+C_{\mathrm{LSI}}(q_t)
+\ \ge\ 
+\frac{\min\{C_{\mathrm{LSI}}(\pi),\,1\}}{\alpha_t^2 M^2+\sigma_t^2}.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Let $\mu:=\pi\otimes\mathcal{N}(0,I_D)$ be the joint law of $(U,Z)\in\mathbb{R}^d\times\mathbb{R}^D$.
+By tensorization of log--Sobolev inequalities, $\mu$ satisfies an LSI with constant
+$C_{\mathrm{LSI}}(\mu)=\min\{C_{\mathrm{LSI}}(\pi),1\}$.
+Define the (deterministic) map $F(u,z):=\alpha_t h(u)+\sigma_t z$ so that $F_{\#}\mu$ is the law of $\tilde \Y_t$.
+For any smooth $\varphi:\mathbb{R}^D\to\mathbb{R}$, set $\psi(u,z):=\varphi(F(u,z))$.
+By the chain rule,
+\[
+\|\nabla_{(u,z)}\psi(u,z)\|_2^2
+\le
+\bigl(\alpha_t^2\|J_h(u)\|_{\mathrm{op}}^2+\sigma_t^2\bigr)\,\|\nabla\varphi(F(u,z))\|_2^2
+\le
+\bigl(\alpha_t^2 M^2+\sigma_t^2\bigr)\,\|\nabla\varphi(F(u,z))\|_2^2,
+\]
+where the last inequality uses Assumption~\ref{G1}.
+Applying the LSI for $\mu$ to $\psi$ and rewriting the result under the pushforward $F_{\#}\mu$ yields
+\[
+\mathrm{Ent}_{q_t}(\varphi^2)
+\le
+\frac{2(\alpha_t^2 M^2+\sigma_t^2)}{C_{\mathrm{LSI}}(\mu)}\int_{\mathbb{R}^D}\|\nabla\varphi(y)\|_2^2\,q_t(y)\,\dd y.
+\]
+This proves \eqref{eq:lsi-qt-explicit}.
+\end{proof}
+
+\begin{lemma}[LSI $\Rightarrow$ $W_2$--Fisher chain, Theorem 22.17 of \cite{villani2009optimal}]\label{lem:lsi-chain}
+If $p$ satisfies LSI with constant $\rho>0$ (Definition~\ref{def:lsi}), then $p$ also satisfies Talagrand's $T_2$ inequality and, for any $q\ll p$,
+\[
+W_2^2(q,p)\ \le\ \frac{2}{\rho}\,\KL{q}{p}\ \le\ \frac{1}{\rho^2}\,\mathcal{J}(q\|p),
+\]
+where $\mathcal{J}(q\|p):=\int\|\nabla\log q-\nabla\log p\|_2^2\,q$ is the relative Fisher information.
+\end{lemma}
+
+%\begin{lemma}[Smoothing bias]\label{lem:smoothing-bias}
+%For any random vector $X\in\R^D$ with $\E\|X\|_2^2<\infty$, any $\alpha\in\R$ and $\sigma\ge0$,
+%\begin{equation}\label{eq:smoothing-bias}
+%W_2\!\big(P_X,\,P_{\alpha X+\sigma Z}\big)
+%\;\le\; |1-\alpha|\,\sqrt{\E\|X\|_2^2}\;+\;\sigma\,\sqrt{D},\qquad Z\sim\mathcal N(0,I_D).
+%\end{equation}
+%\end{lemma}
+%\begin{proof}[Proof sketch]
+%Couple the two laws by the same pair $(X,Z)$ with $Z\sim\mathcal N(0,I_D)$ independent of $X$ and use
+%\(
+%W_2(P_X,P_{\alpha X+\sigma Z}) \le \big(\E\|X-(\alpha X+\sigma Z)\|_2^2\big)^{1/2}
+%\)
+%followed by the Minkowski inequality.
+%\end{proof}
+
+The following is a ReLU approximation result for a H\"older class of smooth functions, which is a simplified version of Theorem 1.1 in \cite{lu2021deep} and Lemma 11 in \cite{huang2022error}.
+\begin{lemma}[Lemma 11 in \cite{huang2022error}]
+\label{l_approx_nn}
+ For any $f\in{C}^{r}([0,1]^{d},\R,B)$, there exists a ReLU network $\Phi$ with $\mathbb{W}=c_W(W\log W)$, $\mathbb{L}=c_L(L\log L)$ and $\mathbb{E}=(WL)^{c_E}$ with some positive constants $c_W$, $c_L$ and $c_E$ dependent on $d$ and $r$, such that $
+ \sup_{\x\in[0,1]^{d}}|\Phi(\x)-f(\x)|=O( B (WL)^{-\frac{2r}{d}})
+ $. 
+\end{lemma}
+
+\begin{lemma}
+\label{large-d}
+Assume that $f(\Y) \in \cal F$ satisfies the Bernstein condition with some constant $c_b$ for an i.i.d. sample $\Y^1,\cdots,\Y^n$. Let $\phi (M,v^2,{\cal F})=\frac{M^{2}}{2[4v^2+ M c_b /3 n^{1/2}]}$, 
+where ${\rm Var}(f(\Y)) \leq v^2$. Assume that 
+\begin{eqnarray}
+\label{mean-var}
+M \leq k n^{1/2} v^2/4c_b, 
+\end{eqnarray}
+with $0<k<1$ and
+\begin{eqnarray}
+\label{entropy0}
+\int_{k M/(8 n^{1/2})}^{v} H_B^{1/2}(u,{\cal F}) du \leq M k^{3/2}/2^{10},
+\end{eqnarray}
+then 
+\[ \P^{*}(\sup_{\{f \in {\cal F}\}} n^{-1/2} \sum_{i=1}^n (f(\Y^i) -\E f(\Y^i)) \geq M) \leq 3
+\exp(-(1-k) \phi(M,v^2,n)), \]
+where $\P^{*}$ denotes the outer probability. Specifically, for any event $A$,
+\[
+\P^{*}(A):=\inf\{\P(B):A\subseteq B,\ B\ \text{measurable}\}.
+\]
+\end{lemma}
+
+
+\begin{proof}[Proof of Lemma \ref{large-d}]
+The result follows from the same arguments as in the proof of Theorem 3 in \cite{shen1994convergence} with $\Var(f(X)) \leq v^2$. 
+Note that Bernstein's condition replaces the upper boundedness condition
+there, and the second condition of (4.6) there is not needed here. 
+\end{proof}
+
+
+\newcommand{\ip}[2]{\left\langle #1,#2 \right\rangle}
+
+We now present the technical lemmas that will serve as the foundation for the proof of Theorem~\ref{thm:vp-tau-linear}.
+
+For $s\in[0,t]$, let $p_s,q_s$ be $C^2$ densities on $\R^D$ with finite second moments solving the continuity equations
+\begin{equation}\label{eq:CE}
+\partial_s p_s + \nabla\!\cdot(p_s v^p_s)=0,\qquad
+\partial_s q_s + \nabla\!\cdot(q_s v^q_s)=0,
+\end{equation}
+where the (variance-preserving) probability--flow fields are
+\begin{equation}\label{eq:flows}
+v^p_s(x)= -\tfrac12 \beta(s)\,x - \beta(s)\,\nabla\log p_s(x),\qquad
+v^q_s(x)= -\tfrac12 \beta(s)\,x - \beta(s)\,\nabla\log q_s(x),
+\end{equation}
+with a measurable schedule $\beta(s)\ge 0$. Denote the scores and their difference by
+\[
+s_p:=\nabla\log p_s,\qquad s_q:=\nabla\log q_s,\qquad \Delta:=s_p-s_q,
+\]
+and define 
+$J_s \;:=\; \int_{\R^D} \|\Delta(y)\|^2\,q_s(y)\,\dd y.$
+Assume there is a measurable $L_\star(s)\ge 0$ such that for all $x$ and all $s\in[0,t]$,
+\begin{equation}\label{eq:HessianBound}
+\|\nabla^2\log p_s(x)\|_{\mathrm{op}} \le L_\star(s),\qquad \|\nabla^2\log q_s(x)\|_{\mathrm{op}} \le L_\star(s),
+\end{equation}
+and that all integrals below are justified (sufficient decay/integrability; boundary terms vanish).
+
+
+
+\begin{assumption}
+\label{A:12}
+There exist measurable functions $L(\cdot),K(\cdot):[0,t]\to[0,\infty)$ such that, for all $s\in[0,t]$:
+\begin{align}
+&\text{(A1) Flow Lipschitz:}\quad
+\|\nabla v^p_s(x)\|_{\rm op}\le L(s),\quad
+\|\nabla v^q_s(x)\|_{\rm op}\le L(s)\quad\forall x.
+\label{A1}\\[2pt]
+&\text{(A2) Score--gap growth:}\quad
+\frac{d}{ds}J_s\ \le\ 2\,K(s)\,J_s.
+\label{A2}
+\end{align}
+\end{assumption}
+
+\begin{lemma}[Variable-coefficient pull--back]\label{lem:pullback-LK}
+Let $P:=p_0$ and $Q:=q_0$. Under Assumption \ref{A:12}, for every $t>0$,
+\begin{equation}\label{eq:W2-pullback-LK}
+W_2(p_0,q_0)\ \le\ e^{\int_0^t L}\,W_2(p_t,q_t)
+\ +\ e^{\int_0^t L}\!\int_0^t \beta(u)\,
+\exp\!\Big(\int_u^t (K(r)-L(r))\,dr\Big)\,du\ \sqrt{J_t}\,.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Let $\pi_t$ be an optimal coupling of $p_t,q_t$; draw $(\X_t,\Y_t)\sim\pi_t$ and evolve \emph{backward}
+\[
+\X_s:=\Phi^p_{s\leftarrow t}(\X_t),\qquad \Y_s:=\Phi^q_{s\leftarrow t}(\Y_t),\qquad s\in[0,t].
+\]
+Then $\X_s\sim p_s$, $\Y_s\sim q_s$. Set $\Delta_s^{\rm traj}:=\X_s-\Y_s$ and
+$R_s:=\big(\mathbb E\|\Delta_s^{\rm traj}\|^2\big)^{1/2}$; then $W_2(p_s,q_s)\le R_s$,
+$W_2(p_0,q_0)\le R_0$, and $W_2(p_t,q_t)\le R_t$.
+
+Differentiate $\tfrac12\|\Delta_s^{\rm traj}\|^2$ and use the flow ODEs:
+\[
+\frac{d}{ds}\tfrac12\|\Delta_s^{\rm traj}\|^2
+=\ip{\Delta_s^{\rm traj}}{v^p_s(\X_s)-v^p_s(\Y_s)}
++\ip{\Delta_s^{\rm traj}}{v^p_s(\Y_s)-v^q_s(\Y_s)}.
+\]
+By \eqref{A1}, $\|v^p_s(\X_s)-v^p_s(\Y_s)\|\le L(s)\,\|\Delta_s^{\rm traj}\|$. Moreover,
+$v^p_s-v^q_s=-\beta(s)\,\Delta_s$ (where $\Delta_s := \nabla \log p_s - \nabla \log q_s$) pointwise, so
+\[
+\ip{\Delta_s^{\rm traj}}{v^p_s(\Y_s)-v^q_s(\Y_s)}
+\le \beta(s)\,\|\Delta_s^{\rm traj}\|\,\|\Delta_s(\Y_s)\|.
+\]
+Taking expectations and applying Cauchy--Schwarz yields
+\begin{equation}\label{eq:Rs-ODE}
+\frac{d}{ds}R_s\ \le\ L(s)\,R_s\ +\ \beta(s)\,\sqrt{J_s},\qquad 0\le s\le t.
+\end{equation}
+By Gr\"onwall from $s$ to $t$ (integrating the backward flow stability),
+\begin{equation}\label{eq:R-Gr}
+R_s \ \le\ e^{\int_s^t L}\,R_t\ +\ \int_s^t \beta(u)\,e^{\int_s^u L}\,\sqrt{J_u}\,du.
+\end{equation}
+
+By \eqref{A2} and Gr\"onwall, we assume the growth condition implies that for $0\le u\le t$,
+\begin{equation}\label{eq:J-back}
+\sqrt{J_u}\ \le\ e^{\int_u^t K}\,\sqrt{J_t}.
+\end{equation}
+Insert \eqref{eq:J-back} into \eqref{eq:R-Gr} with $s=0$, and use
+$W_2(p_0,q_0)\le R_0$, $R_t\ge W_2(p_t,q_t)$:
+\[
+W_2(p_0,q_0)
+\ \le\ e^{\int_0^t L}\,W_2(p_t,q_t)
+\ +\ e^{\int_0^t L}\!\int_0^t \beta(u)\,e^{-\int_u^t L}\,e^{\int_u^t K}\,du\ \sqrt{J_t},
+\]
+which is \eqref{eq:W2-pullback-LK}.
+\end{proof}
+
+
+
+
+\begin{lemma}[Hessian bound with $h\in C^{1+\eta}$]
+\label{lem:Hessian-C1gamma}
+Assume the latent prior has bounded Hessian:
+\(
+\sup_{\bm u}\|\nabla_{\bm u}^2\log\pi_{\U}(\bm u)\|\le \Lambda_2
+\).
+Consider the VP corruption at level $s$,
+\(
+\Y_s=\alpha_s \X+\sigma_s \Z,\; \alpha_s\in(0,1],\ \sigma_s>0,
+\)
+with $\X=h(\U)$ and $\sigma_s\le c\rho$ (inside the tube).
+Then, with $H_s(\y):=\nabla^2\log p_s(\y)$, there exist constants
+$C_T^{(\gamma)},C_S^{(\gamma)},C_N^{(\gamma)}$ depending only on
+$(m,M,H_\gamma,\Lambda_2,\rho)$ such that for all $\y$,
+\begin{align}
+\|\Pi_T H_s(\y)\Pi_T\|_{\rm op}&\ \le\ C_T^{(\gamma)}\,\frac{\sigma_s^{\gamma-2}}{\alpha_s^{\gamma}},\label{eq:hess-TT}\\[2pt]
+\|\Pi_T H_s(\y)\Pi_N\|_{\rm op}&\ \le\ C_S^{(\gamma)}\,\frac{\sigma_s^{\gamma-2}}{\alpha_s^{\gamma}},\label{eq:hess-TN}\\[2pt]
+\Pi_N H_s(\y)\Pi_N&\ \preceq\ -\Big(\sigma_s^{-2}-C_N^{(\gamma)}\,\frac{\sigma_s^{2\gamma-2}}{\alpha_s^{2\gamma}}\Big)\,\Pi_N.\label{eq:hess-NN}
+\end{align}
+Consequently,
+\[
+L_{\star}(s):=\sup_{\y} \lambda_{\max}\big(H_s(\y)\big)
+\ \le\ C_\gamma\,\frac{\sigma_s^{\gamma-2}}{\alpha_s^{\gamma}},
+\quad C_\gamma:=C_T^{(\gamma)}+\frac{\big(C_S^{(\gamma)}\big)^2}{1-C_N^{(\gamma)}\,\frac{\sigma_s^{2\gamma}}{\alpha_s^{2\gamma}}}\,.
+\]
+\end{lemma}
+
+\begin{proof}
+For $\Y_s=\alpha_s \X+\sigma_s \Z$ with $\Z\sim\mathcal N(0,\bm{I}_D)$ independent of $\X$, the score and Hessian satisfy
+\[
+\nabla\log p_s(\y)=\frac{\alpha_s}{\sigma_s^2}\Bigl(\E[\X\mid \Y_s=\y]-\frac{\y}{\alpha_s}\Bigr),
+\qquad
+H_s(\y)=\nabla^2\log p_s(\y)=\frac{\alpha_s^2}{\sigma_s^4}\Cov(\X\mid \Y_s=\y)-\frac{1}{\sigma_s^2}I_D.
+\tag{A}\label{eq:tweedie-hess}
+\]
+
+\smallskip
+Fix $\y$ and let $\x_0:=\Pi_{\M}(\y/\alpha_s)$ be the unique nearest-point projection onto $\M$
+(well-defined since $\sigma_s\le c\rho$).
+Let $\Pi_T,\Pi_N$ denote orthogonal projections onto the tangent/normal spaces at $\x_0$.
+Because $\x_0$ is the nearest-point projection, the residual
+\[
+\bm r:=\y/\alpha_s-\x_0
+\]
+is normal: $\Pi_T \bm r=0$ and $\bm r=\Pi_N \bm r$.
+
+Choose $\bm u_0$ such that $h(\bm u_0)=\x_0$, and write a local $C^{1,\gamma}$ parametrization of $\M$:
+for $\xi$ in a small ball in $\R^{d}$,
+\[
+\x(\xi)=\x_0 + J\xi + R(\xi),
+\qquad
+J:=J_h(\bm u_0),
+\qquad
+\|R(\xi)\|\le C\,\|\xi\|^{1+\gamma},
+\tag{B}\label{eq:chart}
+\]
+where $C$ depends only on $(m,H_\gamma)$.
+
+\smallskip
+The conditional law of $\xi$ given $\Y_s=\y$ has (unnormalized) density proportional to
+\[
+\exp\!\Bigl(-\frac{1}{2\sigma_s^2}\,\|\bm r-(J\xi+R(\xi))\|^2\Bigr)\,\pi_{\U}(\bm u_0+\xi).
+\]
+Using \eqref{eq:chart} and $\Pi_T \bm r=0$, one obtains standard Laplace/Gaussian comparison bounds implying:
+there exists $c_0>0$ (depending only on $(m,M,H_\gamma)$) such that the posterior concentrates on
+$\{\|\xi\|\lesssim \varepsilon\}$, and the moments obey
+\begin{align}
+\E[\xi\mid \y] &= O\!\bigl(\varepsilon^{1+\gamma}\bigr),
+\label{eq:xi-mean}\\
+\Cov(\xi\mid \y)
+&=\frac{\sigma_s^2}{\alpha_s^2}(J^\top J)^{-1}
++O\!\Bigl(\frac{\sigma_s^{2+\gamma}}{\alpha_s^{2+\gamma}}\Bigr),
+\label{eq:xi-cov}\\
+\E[\|\xi\|^{2+\gamma}\mid \y] &= O(\varepsilon^{2+\gamma}),
+\qquad
+\E[\|\xi\|^{2+2\gamma}\mid \y] = O(\varepsilon^{2+2\gamma}).
+\label{eq:xi-mom}
+\end{align}
+
+\smallskip
+Write $\X-\x_0=J\xi+R(\xi)$ and project:
+\[
+\delta \x_T:=\Pi_T(\X-\x_0)=J\xi+O(\|\xi\|^{1+\gamma}),
+\qquad
+\delta \x_N:=\Pi_N(\X-\x_0)=O(\|\xi\|^{1+\gamma}).
+\]
+Using \eqref{eq:xi-cov}--\eqref{eq:xi-mom} and $\|J\|_{\rm op}\le M$, $\|(J^\top J)^{-1}\|_{\rm op}\le m^{-2}$,
+we obtain the block covariance bounds
+\begin{align}
+\Cov_T:=\Pi_T\Cov(\X\mid \y)\Pi_T
+&=J\,\Cov(\xi\mid \y)\,J^\top + O\!\bigl(\E\|\xi\|^{2+\gamma}\mid \y\bigr)\nonumber\\
+&=\frac{\sigma_s^2}{\alpha_s^2}\,\Pi_T
++O\!\Bigl(\frac{\sigma_s^{2+\gamma}}{\alpha_s^{2+\gamma}}\Bigr),
+\label{eq:covT}\\
+\Cov_{TN}:=\Pi_T\Cov(\X\mid \y)\Pi_N
+&=O\!\bigl(\E\|J\xi\|\,\|\xi\|^{1+\gamma}\mid \y\bigr)
+=O\!\Bigl(\frac{\sigma_s^{2+\gamma}}{\alpha_s^{2+\gamma}}\Bigr),
+\label{eq:covTN}\\
+\Cov_N:=\Pi_N\Cov(\X\mid \y)\Pi_N
+&=O\!\bigl(\E\|\xi\|^{2+2\gamma}\mid \y\bigr)
+=O\!\Bigl(\frac{\sigma_s^{2+2\gamma}}{\alpha_s^{2+2\gamma}}\Bigr).
+\label{eq:covN}
+\end{align}
+
+\smallskip
+Using \eqref{eq:tweedie-hess} and \eqref{eq:covT}--\eqref{eq:covN},
+\[
+\Pi_T H_s \Pi_T
+=\frac{\alpha_s^2}{\sigma_s^4}\Cov_T-\frac{1}{\sigma_s^2}\Pi_T
+=O\!\Bigl(\frac{\alpha_s^2}{\sigma_s^4}\cdot\frac{\sigma_s^{2+\gamma}}{\alpha_s^{2+\gamma}}\Bigr)
+=O\!\Bigl(\frac{\sigma_s^{\gamma-2}}{\alpha_s^{\gamma}}\Bigr),
+\]
+which gives \eqref{eq:hess-TT}. Similarly,
+\[
+\Pi_T H_s \Pi_N
+=\frac{\alpha_s^2}{\sigma_s^4}\Cov_{TN}
+=O\!\Bigl(\frac{\sigma_s^{\gamma-2}}{\alpha_s^{\gamma}}\Bigr),
+\]
+giving \eqref{eq:hess-TN}. Finally,
+\[
+\Pi_N H_s \Pi_N
+=\frac{\alpha_s^2}{\sigma_s^4}\Cov_N-\frac{1}{\sigma_s^2}\Pi_N
+\preceq
+-\Bigl(\sigma_s^{-2}-C\,\frac{\sigma_s^{2\gamma-2}}{\alpha_s^{2\gamma}}\Bigr)\Pi_N,
+\]
+which is \eqref{eq:hess-NN} after renaming constants.
+
+\smallskip
+In the $(T,N)$ block form, write
+\[
+H_s=
+\begin{pmatrix}
+A & B\\
+B^\top & C
+\end{pmatrix},
+\qquad
+A=\Pi_T H_s\Pi_T,\ B=\Pi_T H_s\Pi_N,\ C=\Pi_N H_s\Pi_N.
+\]
+By \eqref{eq:hess-NN}, $-C\succeq \mu\,I$ with
+\[
+\mu:=\sigma_s^{-2}-C_N^{(\gamma)}\frac{\sigma_s^{2\gamma-2}}{\alpha_s^{2\gamma}}
+=\sigma_s^{-2}\bigl(1-\theta_s\bigr),
+\qquad \theta_s=C_N^{(\gamma)}\frac{\sigma_s^{2\gamma}}{\alpha_s^{2\gamma}}.
+\]
+When $\theta_s<1$, the Schur complement bound implies
+\[
+\lambda_{\max}(H_s)
+\le \|A\|_{\rm op}+\frac{\|B\|_{\rm op}^2}{\mu}.
+\]
+Combine with \eqref{eq:hess-TT}--\eqref{eq:hess-TN} to get
+\[
+\lambda_{\max}(H_s)
+\le
+C_T^{(\gamma)}\frac{\sigma_s^{\gamma-2}}{\alpha_s^\gamma}
++\frac{\bigl(C_S^{(\gamma)}\bigr)^2}{1-\theta_s}\frac{\sigma_s^{\gamma-2}}{\alpha_s^\gamma}
+=
+C_\gamma\frac{\sigma_s^{\gamma-2}}{\alpha_s^\gamma},
+\]
+which yields the stated envelope for $L_\star(s)$.
+\end{proof}
+
+\begin{lemma}[Score--gap growth along the $q$--flow]\label{lem:score_growth}
+Let $p_s,q_s$ solve the continuity equations \eqref{eq:CE} with VP probability--flow fields \eqref{eq:flows},
+and define
+\[
+s_p=\nabla\log p_s,\quad s_q=\nabla\log q_s,\quad \Delta:=s_p-s_q,\quad
+J_s:=\int_{\R^D}\|\Delta\|_2^2\,q_s.
+\]
+Assume the Hessian envelope \eqref{eq:HessianBound} holds:
+\[
+\|\nabla^2\log p_s(x)\|_{\rm op}\le L_\star(s),\qquad
+\|\nabla^2\log q_s(x)\|_{\rm op}\le L_\star(s)\qquad(\forall x).
+\]
+Then, for all $0\le u\le t$,
+\begin{equation}\label{eq:J-growth-new}
+J_u \;\le\; J_t\,
+\exp\!\Big(2\int_u^t \beta(r)\big(\tfrac12+4L_\star(r)\big)\,dr\Big).
+\end{equation}
+Equivalently, $dJ_s/ds \le 2K(s)J_s$ with $K(s)=\beta(s)\big(\tfrac12+4L_\star(s)\big)$.
+\end{lemma}
+
+\begin{proof}
+Note that,
+if $\rho_s$ solves $\partial_s\rho_s+\nabla\!\cdot(\rho_s v_s)=0$, then its score
+$s_\rho:=\nabla\log\rho_s$ satisfies
+\begin{equation}\label{eq:transport-re}
+\partial_s s_\rho + (\nabla s_\rho)\,v_s + (\nabla v_s)^{\!\top} s_\rho + \nabla(\nabla\!\cdot v_s)=0.
+\end{equation}
+So we apply \eqref{eq:transport-re} to $(p_s,v_s^p)$ and $(q_s,v_s^q)$.
+
+Then Subtract the two identities and rewrite the transport part along $v_s^q$:
+\begin{align}
+\partial_s \Delta + (\nabla\Delta)\,v_s^q + (\nabla v_s^q)^{\!\top}\Delta
+&= -\Big[(\nabla s_p)(v_s^p-v_s^q) + \big((\nabla v_s^p)^{\!\top}-(\nabla v_s^q)^{\!\top}\big)s_p
++ \nabla\big(\nabla\!\cdot(v_s^p-v_s^q)\big)\Big].
+\label{eq:DeltaPDE-raw-re}
+\end{align}
+Using \eqref{eq:flows} one has
+\[
+v_s^p-v_s^q=-\beta(s)\Delta,\quad
+\nabla v_s^p-\nabla v_s^q=-\beta(s)\nabla\Delta,\quad
+\nabla\!\cdot(v_s^p-v_s^q)=-\beta(s)\nabla\!\cdot\Delta,
+\]
+so \eqref{eq:DeltaPDE-raw-re} becomes
+\begin{equation}\label{eq:DeltaPDE-re}
+\partial_s \Delta + (\nabla\Delta)\,v_s^q + (\nabla v_s^q)^{\!\top}\Delta
+=\beta(s)\Big[(\nabla s_p)\Delta + (\nabla\Delta)^{\!\top} s_p + \nabla(\nabla\!\cdot\Delta)\Big].
+\end{equation}
+
+Differentiate $J_s=\int \|\Delta\|^2 q_s$ and use $\partial_s q_s=-\nabla\!\cdot(q_s v_s^q)$:
+\begin{align*}
+\frac{d}{ds}J_s
+&=\int 2\ip{\Delta}{\partial_s\Delta}\,q_s
++\int \|\Delta\|^2\,\partial_s q_s\\
+&=\int 2\ip{\Delta}{\partial_s\Delta}\,q_s
+-\int \|\Delta\|^2\,\nabla\!\cdot(q_s v_s^q)\\
+&=\int 2\ip{\Delta}{\partial_s\Delta}\,q_s
++\int q_s\,v_s^q\cdot\nabla(\|\Delta\|^2)\\
+&=2\int q_s\,\ip{\Delta}{\partial_s\Delta+(\nabla\Delta)\,v_s^q}.
+\end{align*}
+Insert \eqref{eq:DeltaPDE-re} to obtain
+\begin{align}
+\frac{d}{ds}J_s
+&=-2\int q_s\,\ip{\Delta}{(\nabla v_s^q)^{\!\top}\Delta}
++2\beta(s)\int q_s\,\ip{\Delta}{(\nabla s_p)\Delta}
++2\beta(s)\,I_s,
+\label{eq:Jprime-split}
+\end{align}
+where
+\[
+I_s:=\int q_s\Big(\ip{\Delta}{\nabla(\nabla\!\cdot\Delta)}+\ip{\Delta}{(\nabla\Delta)^{\!\top}s_p}\Big).
+\]
+
+Let $f:=\nabla\!\cdot\Delta$. Using $s_p=s_q+\Delta$ we split
+\[
+I_s
+=
+\int q_s\Big(\ip{\Delta}{\nabla f}+\ip{\Delta}{(\nabla\Delta)^{\!\top}s_q}\Big)
+\;+\;
+\int q_s\,\ip{\Delta}{(\nabla\Delta)^{\!\top}\Delta}.
+\]
+The first bracket equals $-\int q_s\|\nabla\Delta\|_F^2\le 0$ by Lemma~\ref{lem:IBP-q}.
+For the second term, use
+\[
+\ip{\Delta}{(\nabla\Delta)^{\!\top}\Delta}
+=\Delta^\top(\nabla\Delta)\Delta
+\le \|\nabla\Delta\|_{\rm op}\,\|\Delta\|^2,
+\qquad
+\|\nabla\Delta\|_{\rm op}
+\le \|\nabla^2\log p_s\|_{\rm op}+\|\nabla^2\log q_s\|_{\rm op}
+\le 2L_\star(s),
+\]
+hence
+\begin{equation}\label{eq:Ibound-re}
+I_s\le 2L_\star(s)\,J_s.
+\end{equation}
+
+From \eqref{eq:flows},
+\[
+\nabla v_s^q(x)= -\tfrac12\beta(s)I - \beta(s)\nabla^2\log q_s(x)
+\quad\Rightarrow\quad
+\|\nabla v_s^q\|_{\rm op}\le \beta(s)\big(\tfrac12+L_\star(s)\big).
+\]
+Also,
+\[
+\int q_s\,\ip{\Delta}{(\nabla s_p)\Delta}\le L_\star(s)\int q_s\|\Delta\|^2=L_\star(s)J_s.
+\]
+Insert these bounds and \eqref{eq:Ibound-re} into \eqref{eq:Jprime-split}:
+\[
+\frac{d}{ds}J_s
+\le 2\beta(s)\big(\tfrac12+L_\star(s)\big)J_s
++2\beta(s)L_\star(s)J_s
++4\beta(s)L_\star(s)J_s
+=\big(\beta(s)+8\beta(s)L_\star(s)\big)J_s.
+\]
+Equivalently,
+\[
+\frac{d}{ds}J_s\le 2\,\beta(s)\big(\tfrac12+4L_\star(s)\big)\,J_s.
+\]
+Applying Gr\"onwall on $[u,t]$ yields \eqref{eq:J-growth-new}.
+\end{proof}
+
+\begin{lemma}[Weighted IBP identity along the $q$--flow]\label{lem:IBP-q}
+Let $q$ be a $C^2$ density on $\R^D$ with score $s_q=\nabla\log q$.
+Let $\Delta=\nabla g$ be a $C^2$ gradient field (so $\nabla\Delta=\nabla^2 g$ is symmetric), and set
+$f:=\nabla\!\cdot\Delta$.
+Assume sufficient decay/integrability so that boundary terms vanish.
+Then
+\begin{equation}\label{eq:IBP-q}
+\int_{\R^D} q\,\ip{\Delta}{\nabla f}\,dx
+\;+\;
+\int_{\R^D} q\,\ip{\Delta}{(\nabla\Delta)^{\!\top} s_q}\,dx
+\;=\;
+-\int_{\R^D} q\,\|\nabla\Delta\|_F^2\,dx
+\;\le\;0.
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+Write $s_q=\nabla\log q$, so $q\,s_q=\nabla q$.
+Using integration by parts (boundary terms vanish),
+\[
+\int q\,\ip{\Delta}{(\nabla\Delta)^{\!\top} s_q}\,dx
+=
+\int \Delta^\top(\nabla\Delta)\,\nabla q\,dx
+=
+-\int q\,\nabla\!\cdot\!\big(\Delta^\top(\nabla\Delta)\big)\,dx.
+\]
+Compute the divergence in coordinates (summation convention):
+\[
+\nabla\!\cdot\!\big(\Delta^\top(\nabla\Delta)\big)
+=
+\partial_j\big(\Delta_i\,\partial_i\Delta_j\big)
+=
+(\partial_j\Delta_i)(\partial_i\Delta_j)+\Delta_i\,\partial_i(\partial_j\Delta_j).
+\]
+Since $\Delta=\nabla g$, we have $\partial_j\Delta_i=\partial_i\Delta_j$, hence
+\[
+(\partial_j\Delta_i)(\partial_i\Delta_j)=\sum_{i,j}(\partial_i\Delta_j)^2=\|\nabla\Delta\|_F^2,
+\qquad
+\Delta_i\,\partial_i(\partial_j\Delta_j)=\ip{\Delta}{\nabla f}.
+\]
+Therefore
+\[
+\int q\,\ip{\Delta}{(\nabla\Delta)^{\!\top} s_q}\,dx
+=
+-\int q\,\|\nabla\Delta\|_F^2\,dx
+-\int q\,\ip{\Delta}{\nabla f}\,dx,
+\]
+which is exactly \eqref{eq:IBP-q}.
+\end{proof}
+
+
+
+
+\section{Proofs in Section 4}\label{app:sec4-proofs}
+
+\begin{proof}[Proof of Lemma~\ref{thm:gen}]
+Fix $t\in(0,1)$ and let $\bm U\sim\pi$. For $\y\in\R^D$ define
+\[
+\phi_{\sigma_t}(\bm z):=(2\pi\sigma_t^2)^{-D/2}\exp\!\Big(-\frac{\|\bm z\|^2}{2\sigma_t^2}\Big),
+\qquad
+w_t(\bm u;\y):=\phi_{\sigma_t}\!\big(\y-\alpha_t h(\bm u)\big),
+\]
+and the (unnormalized) mixture density
+\[
+B_t(\y):=\E_\pi\big[w_t(\bm U;\y)\big]
+=
+\int_{\mathcal U}\phi_{\sigma_t}\!\big(\y-\alpha_t h(\bm u)\big)\,\pi(\bm u)\,d\bm u
+\;=\;p_t(\y).
+\]
+Define also the posterior mean of $h$ at level $t$,
+\[
+m_t(\y):=\E[h(\bm U)\mid \Y_t=\y]
+=
+\frac{\E_\pi\!\big[w_t(\bm U;\y)\,h(\bm U)\big]}{B_t(\y)}.
+\]
+Given i.i.d.\ anchors $\bm U^{(1)},\dots,\bm U^{(K)}\stackrel{iid}{\sim}\pi$, define the
+self-normalized estimator of $m_t(\y)$,
+\[
+\widetilde m_{t,K}(\y)
+:=
+\frac{\sum_{j=1}^K w_t(\bm U^{(j)};\y)\,h(\bm U^{(j)})}{\sum_{j=1}^K w_t(\bm U^{(j)};\y)}.
+\]
+When $\tilde\pi\equiv\pi$, the transport-based score estimator \eqref{eq:score-estimator} satisfies
+\[
+\widetilde s_{t,K}(\y;h,\pi,\pi)
+=
+\frac{1}{\sigma_t^2}\Big(\alpha_t\,\widetilde m_{t,K}(\y)-\y\Big).
+\]
+Moreover, by \eqref{eq:mixture-score},
+\[
+s_t(\y;h)=\nabla_{\y}\log p_t(\y)
+=
+\frac{1}{\sigma_t^2}\Big(\alpha_t\,m_t(\y)-\y\Big).
+\]
+Therefore, for all $\y\in\R^D$,
+\begin{equation}\label{eq:score_to_mean}
+\widetilde s_{t,K}(\y;h,\pi,\pi)-s_t(\y;h)
+=
+\frac{\alpha_t}{\sigma_t^2}\big(\widetilde m_{t,K}(\y)-m_t(\y)\big),
+\end{equation}
+and hence
+\begin{equation}\label{eq:mse_reduce}
+\E\big\|\widetilde s_{t,K}(\Y_t;h,\pi,\pi)-s_t(\Y_t;h)\big\|_2^2
+=
+\frac{\alpha_t^2}{\sigma_t^4}\,
+\E\big\|\widetilde m_{t,K}(\Y_t)-m_t(\Y_t)\big\|_2^2.
+\end{equation}
+
+In the first step, we bound the conditional mean-squared error of the self-normalized estimator
+$\widetilde m_{t,K}(\y)$ for fixed $\y$.
+Assume $\E_\pi[w_t(\bm U;\y)^4\|h(\bm U)\|^4]<\infty$ and $B_t(\y)>0$.
+Then the standard self-normalized importance sampling expansion (e.g., \citet[Ch.~9]{owen2013mc})
+gives
+\begin{equation}\label{eq:snis_expansion}
+\E\big\|\widetilde m_{t,K}(\y)-m_t(\y)\big\|_2^2
+=
+\frac{1}{K}\,
+\frac{\E_\pi\!\big[w_t(\bm U;\y)^2\,\|h(\bm U)-m_t(\y)\|_2^2\big]}{B_t(\y)^2}
++O\!\Big(\frac{1}{K^2}\Big),
+\end{equation}
+where the expectation is over the anchors $\bm U^{(1:K)}$ conditional on $\Y_t=\y$.
+
+In the second step, we rewrite the leading term in \eqref{eq:snis_expansion}.
+Using the identity
+\[
+\phi_{\sigma_t}(\bm z)^2
+=
+(4\pi\sigma_t^2)^{-D/2}\,
+\phi_{\sigma_t/\sqrt 2}(\bm z),
+\]
+we obtain
+\[
+\E_\pi\!\big[w_t(\bm U;\y)^2\,g(\bm U)\big]
+=
+(4\pi\sigma_t^2)^{-D/2}\,
+\E_\pi\!\Big[\phi_{\sigma_t/\sqrt 2}\!\big(\y-\alpha_t h(\bm U)\big)\,g(\bm U)\Big]
+\]
+for any measurable $g$.
+Define
+\[
+B_{t,\sigma_t/\sqrt2}(\y)
+:=
+\E_\pi\!\Big[\phi_{\sigma_t/\sqrt 2}\!\big(\y-\alpha_t h(\bm U)\big)\Big],
+\qquad
+C_t(\y)
+:=
+\frac{(4\pi\sigma_t^2)^{-D/2}\,B_{t,\sigma_t/\sqrt2}(\y)}{B_t(\y)^2}.
+\]
+Also define the posterior at bandwidth $\sigma_t/\sqrt2$ by
+\[
+q_{t,\sigma_t/\sqrt2}(\bm u\mid \y)
+:=
+\frac{\phi_{\sigma_t/\sqrt2}\!\big(\y-\alpha_t h(\bm u)\big)\,\pi(\bm u)}
+{B_{t,\sigma_t/\sqrt2}(\y)}.
+\]
+Applying the above identity with $g(\bm U)=\|h(\bm U)-m_t(\y)\|_2^2$ yields
+\begin{equation}\label{eq:posterior_rewrite_mean}
+\frac{\E_\pi\!\big[w_t(\bm U;\y)^2\,\|h(\bm U)-m_t(\y)\|_2^2\big]}{B_t(\y)^2}
+=
+C_t(\y)\,
+\E_{q_{t,\sigma_t/\sqrt2}(\cdot\mid \y)}\!\big[\|h(\bm U)-m_t(\y)\|_2^2\big].
+\end{equation}
+Combining \eqref{eq:snis_expansion} and \eqref{eq:posterior_rewrite_mean} gives
+\begin{equation}\label{eq:pointwise_mean_mse}
+\E\big\|\widetilde m_{t,K}(\y)-m_t(\y)\big\|_2^2
+=
+\frac{C_t(\y)}{K}\,
+\E_{q_{t,\sigma_t/\sqrt2}(\cdot\mid \y)}\!\big[\|h(\bm U)-m_t(\y)\|_2^2\big]
++O\!\Big(\frac{1}{K^2}\Big).
+\end{equation}
+
+Then, we bound $C_t(\y)$ using Lemma~\ref{lemma_gmc} (Gaussian--manifold convolution).
+The marginal density is
+\[
+B_t(\y)=p_t(\y)=\int_{\mathcal U}\phi_{\sigma_t}\!\big(\y-\alpha_t h(\bm u)\big)\pi(\bm u)\,d\bm u,
+\]
+which is a Gaussian smoothing of the image manifold $\alpha_t\mathcal M$ at scale $\sigma_t$.
+Applying Lemma~\ref{lemma_gmc} with intrinsic dimension $d$ (and observing that the exponential
+terms cancel in the ratio defining $C_t$) yields constants $c_1,c_2,\sigma_0>0$ such that
+\begin{equation}\label{eq:Ct_bounds}
+c_1\,\sigma_t^{-d}\ \le\ C_t(\y)\ \le\ c_2\,\sigma_t^{-d}
+\qquad(\y\in\mathcal T_r(\alpha_t\mathcal M),\ \sigma_t\le \sigma_0).
+\end{equation}
+
+In the next step, we bound the posterior second-moment term.
+Since $\|h(\bm U)\|_2\le B$ almost surely, we have for all $\y$,
+\[
+\|h(\bm U)-m_t(\y)\|_2^2
+\le \big(\|h(\bm U)\|_2+\|m_t(\y)\|_2\big)^2
+\le 4B^2,
+\]
+hence
+\begin{equation}\label{eq:posterior_var_bound}
+\E_{q_{t,\sigma_t/\sqrt2}(\cdot\mid \y)}\!\big[\|h(\bm U)-m_t(\y)\|_2^2\big]\le 4B^2.
+\end{equation}
+Combining \eqref{eq:pointwise_mean_mse}, \eqref{eq:Ct_bounds}, and \eqref{eq:posterior_var_bound},
+and choosing $K$ sufficiently large so that the $O(K^{-2})$ term is dominated by the leading term,
+we obtain for $\y\in\mathcal T_r(\alpha_t\mathcal M)$ and $\sigma_t\le\sigma_0$,
+\[
+\E\big\|\widetilde m_{t,K}(\y)-m_t(\y)\big\|_2^2
+\le
+\frac{C'}{K}\,\sigma_t^{-d},
+\]
+for a constant $C'>0$ depending only on $(B,d,D)$ and the geometric constants in
+Assumptions~\ref{G1}--\ref{G2}.
+Taking expectation over $\Y_t$ and substituting into \eqref{eq:mse_reduce} yields
+\[
+\E\big\|\widetilde s_{t,K}(\Y_t;h,\pi,\pi)-s_t(\Y_t;h)\big\|_2^2
+\le
+\frac{\alpha_t^2}{\sigma_t^4}\cdot \frac{C'}{K}\,\sigma_t^{-d}
+=
+\frac{C\,\alpha_t^2}{K\,\sigma_t^{d+4}},
+\]
+which is \eqref{eq:K-general}.
+\end{proof}
+
+
+\bigskip
+
+\begin{lemma}[Gaussian--manifold convolution: two--sided bounds ]\label{lemma_gmc}
+Let $h\in\mathcal H_{\mathrm{reg}}$ satisfy Assumption~\ref{G1} on a bounded latent domain
+$\mathcal U\subset\R^{d}$, and let $\pi$ be a latent density on $\mathcal U$ satisfying
+$0<\pi_{\min}\le \pi(\bm u)\le \pi_{\max}<\infty$ for all $\bm u\in\mathcal U$.
+Assume furthermore that $\mathcal M:=h(\mathcal U)$ has reach at least $\rho_{\M}>0$
+(Assumption~\ref{G2}). For $\alpha>0$ define
+\[
+p_{X_\alpha}(\x)
+:=\int_{\mathcal U}\phi_\alpha(\x-h(\bm u))\,\pi(\bm u)\,d\bm u,
+\qquad
+\phi_\alpha(\bm z)
+=(2\pi\alpha^2)^{-D/2}\exp\!\Big(-\frac{\|\bm z\|^2}{2\alpha^2}\Big).
+\]
+Fix $r\in(0,\rho_{\M})$ and consider $\x\in\mathcal T_r(\mathcal M)
+=\{\x:\dist(\x,\mathcal M)\le r\}$.
+Then there exist constants $c_\ell,c_u>0$ and $\alpha_0\in(0,r)$,
+depending only on $(D,d,\pi_{\min},\pi_{\max},m,M,\rho_{\M},r,\mathcal U)$, such that for all
+$\x\in\mathcal T_r(\mathcal M)$ and all $\alpha\in(0,\alpha_0]$,
+\[
+c_\ell\,\alpha^{\,d-D}
+\exp\!\Big(-\frac{\dist(\x,\mathcal M)^2}{2\alpha^2}\Big)
+\;\le\; p_{X_\alpha}(\x)
+\;\le\;
+c_u\,\alpha^{\,d-D}
+\exp\!\Big(-\frac{\dist(\x,\mathcal M)^2}{2\alpha^2}\Big).
+\]
+\end{lemma}
+
+\begin{proof}
+Fix $\x\in\mathcal T_r(\mathcal M)$ and write $\delta=\dist(\x,\mathcal M)$.
+Since $r<\rho_{\M}$ and $\reach(\mathcal M)\ge\rho_{\M}$, there exists a unique nearest point
+$\y_\star\in\mathcal M$ with $\|\x-\y_\star\|=\delta$. Let $\bm v:=\x-\y_\star$, so
+$\|\bm v\|=\delta$ and $\bm v\perp T_{\y_\star}\mathcal M$.
+
+First, by positive reach there exists $r_0=r_0(\rho_{\M})$ and a local chart
+$\Psi:B_d(r_0)\to\mathcal M$ around $\y_\star$ of the form
+\[
+\Psi(\bm w)=\y_\star+P\bm w+\psi(\bm w),
+\]
+where $P$ is an isometry onto $T_{\y_\star}\mathcal M$,
+$\psi(\bm w)\in N_{\y_\star}\mathcal M$,
+$\psi(0)=0$, $D\psi(0)=0$, and
+\[
+\|\psi(\bm w)\|\le K\|\bm w\|^2
+\qquad (\|\bm w\|\le r_0).
+\]
+Write $\y(\bm w):=\Psi(\bm w)$. Since $\bm v,\psi(\bm w)\in N_{\y_\star}\mathcal M$
+and $P\bm w\in T_{\y_\star}\mathcal M$ are orthogonal,
+\[
+\|\x-\y(\bm w)\|^2
+=
+\|\bm v-\psi(\bm w)\|^2+\|\bm w\|^2.
+\]
+After shrinking $r_0$ if necessary, there exist constants $a_1,a_2>0$ such that
+\[
+\delta^2+a_1\|\bm w\|^2
+\le
+\|\x-\y(\bm w)\|^2
+\le
+\delta^2+a_2\|\bm w\|^2
+\qquad (\|\bm w\|\le r_0).
+\]
+
+Then, choose $\bm u_\star\in\mathcal U$ such that
+$h(\bm u_\star)=\y_\star$.
+By Assumption~\ref{G1}(i), $J_h(\bm u_\star)$ has smallest singular value at least $m$.
+Thus, by the inverse function property, 
+there exists $r_1\in(0,r_0)$ and a $C^1$ map
+$\Theta:B_d(r_1)\to\mathcal U$ such that
+\[
+h(\Theta(\bm w))=\Psi(\bm w),
+\qquad
+\Theta(0)=\bm u_\star.
+\]
+Differentiating gives
+\[
+J_h(\Theta(\bm w))\,J_\Theta(\bm w)=D\Psi(\bm w).
+\]
+Since $D\Psi(\bm w)=P+D\psi(\bm w)$ and $\|D\psi(\bm w)\|\le 2K\|\bm w\|$,
+shrinking $r_1$ so that $\|D\psi(\bm w)\|\le \tfrac12$ yields
+\[
+\frac{1}{2M}\le s_{\min}(J_\Theta(\bm w))
+\le s_{\max}(J_\Theta(\bm w))
+\le \frac{3}{2m}.
+\]
+Hence
+\[
+(2M)^{-d}\le |\det(J_\Theta(\bm w))|
+\le (3/(2m))^{d}
+\qquad (\bm w\in B_d(r_1)).
+\]
+Moreover,
+\[
+\delta^2+a_1\|\bm w\|^2
+\le
+\|\x-h(\Theta(\bm w))\|^2
+\le
+\delta^2+a_2\|\bm w\|^2.
+\]
+
+Next, decompose
+\[
+p_{X_\alpha}(\x)
+=
+(2\pi\alpha^2)^{-D/2}
+\int_{\mathcal U}
+\exp\!\Big(-\frac{\|\x-h(\bm u)\|^2}{2\alpha^2}\Big)
+\pi(\bm u)\,d\bm u
+=:I_{\mathrm{near}}+I_{\mathrm{far}},
+\]
+where $I_{\mathrm{near}}$ integrates over $\Theta(B_d(r_1))$.
+
+Changing variables $\bm u=\Theta(\bm w)$ and using
+$\pi\le\pi_{\max}$ and the lower quadratic bound,
+\[
+I_{\mathrm{near}}
+\le
+(2\pi\alpha^2)^{-D/2}\pi_{\max}(3/(2m))^{d}
+\exp\!\Big(-\frac{\delta^2}{2\alpha^2}\Big)
+\int_{\R^d}
+\exp\!\Big(-\frac{a_1\|\bm w\|^2}{2\alpha^2}\Big)\,d\bm w.
+\]
+Evaluating the Gaussian integral yields
+\[
+I_{\mathrm{near}}
+\le
+C_u^{(1)}\,
+\alpha^{d-D}
+\exp\!\Big(-\frac{\delta^2}{2\alpha^2}\Big).
+\]
+
+For $\bm u\notin\Theta(B_d(r_1))$, continuity and uniqueness of projection imply
+\[
+\|\x-h(\bm u)\|^2\ge \delta^2+\kappa
+\]
+for some $\kappa>0$. Hence
+\[
+I_{\mathrm{far}}
+\le
+(2\pi\alpha^2)^{-D/2}
+\pi_{\max}\mathrm{vol}(\mathcal U)
+\exp\!\Big(-\frac{\delta^2+\kappa}{2\alpha^2}\Big).
+\]
+Since
+$
+\exp\!\Big(-\frac{\kappa}{2\alpha^2}\Big)=o(\alpha^d)$,
+this term is absorbed into the same bound for small $\alpha$.
+Thus
+\[
+p_{X_\alpha}(\x)
+\le
+c_u\,
+\alpha^{d-D}
+\exp\!\Big(-\frac{\delta^2}{2\alpha^2}\Big).
+\]
+
+Finally, restrict to $\|\bm w\|\le c\alpha$.
+Using $\pi\ge\pi_{\min}$ and the upper quadratic bound,
+\[
+p_{X_\alpha}(\x)
+\ge
+(2\pi\alpha^2)^{-D/2}
+\pi_{\min}(2M)^{-d}
+\exp\!\Big(-\frac{\delta^2}{2\alpha^2}\Big)
+\int_{\|\bm w\|\le c\alpha}
+\exp\!\Big(-\frac{a_2\|\bm w\|^2}{2\alpha^2}\Big)\,d\bm w.
+\]
+Bounding the exponential below and using
+$\mathrm{vol}_d(B_d(c\alpha))=\omega_d c^d\alpha^d$
+gives
+\[
+p_{X_\alpha}(\x)
+\ge
+c_\ell\,
+\alpha^{d-D}
+\exp\!\Big(-\frac{\delta^2}{2\alpha^2}\Big).
+\]
+\end{proof}
+
+\bigskip
+
+
+
+
+\begin{proof}[Proof of Lemma~\ref{lem:qmc-discrepancy}]
+
+Let $\bm Z\sim\Unif[0,1]^d$ and assume $T:[0,1]^d\to\R^d$ is measurable with $T(\bm Z)\sim\pi$.
+Then for any integrable $\psi:\R^d\to\R$,
+\[
+\int_{\R^d}\psi(\bm u)\,\pi(\dd \bm u)=\E[\psi(T(\bm Z))]=\int_{[0,1]^d}\psi(T(\bm z))\,\dd \bm z.
+\]
+Applying this with
+$\psi_0(\bm u):=\phi\!\left(\y_t;\alpha_t h(\bm u),\sigma_t^2 I_D\right)$ and
+$\psi_1(\bm u):=h(\bm u)\phi\!\left(\y_t;\alpha_t h(\bm u),\sigma_t^2 I_D\right)$ gives
+\[
+I_0=\int_{[0,1]^d} f_0(\bm z)\,\dd \bm z,\qquad I_1=\int_{[0,1]^d} f_1(\bm z)\,\dd \bm z,
+\qquad m_t(\y_t)=\frac{I_1}{I_0}.
+\]
+
+The Koksma--Hlawka inequality \citep{niederreiter1992random} states that for a scalar integrand $g:[0,1]^d\to\R$
+with finite Hardy--Krause variation $V_{\mathrm{HK}}(g)$,
+\[
+\left|\frac1K\sum_{j=1}^K g(\bm z_j)-\int_{[0,1]^d} g(\bm z)\,\dd \bm z\right|
+\le V_{\mathrm{HK}}(g)\,D^\ast(P_K).
+\]
+Applying this to $f_0$ yields
+\begin{equation}\label{eq:KH-f0}
+|I_{0,K}-I_0|
+\le V_{\mathrm{HK}}(f_0)\,D^\ast(P_K).
+\end{equation}
+For the vector integrand $f_1=(f_{1,1},\dots,f_{1,p})$ with $p:=\dim(h(u))$
+(typically $p=d$), apply Koksma--Hlawka coordinate-wise and use
+$\|\cdot\|_2\le \sum_{r=1}^p |\cdot|$ to get
+\[
+\|I_{1,K}-I_1\|_2
+\le \sum_{r=1}^p \left|\frac1K\sum_{j=1}^K f_{1,r}(z_j)-\int f_{1,r}\right|
+\le \left(\sum_{r=1}^p V_{\mathrm{HK}}(f_{1,r})\right) D^\ast(P_K)
+=: V_{\mathrm{HK}}(f_1)\,D^\ast(P_K).
+\]
+
+Assume $V_{\mathrm{HK}}(f_0)D^\ast(P_K)\le I_0/2$. Then by \eqref{eq:KH-f0},
+\[
+I_{0,K}\ge I_0-|I_{0,K}-I_0|\ge I_0/2,
+\qquad\text{so}\qquad
+\frac1{I_{0,K}}\le \frac{2}{I_0}.
+\]
+Now decompose the ratio error:
+\begin{align*}
+\widetilde m^{\mathrm{QMC}}_{t,K}(\y_t)-m_t(\y_t)
+=\frac{I_{1,K}}{I_{0,K}}-\frac{I_1}{I_0}
+=\frac{I_{1,K}-I_1}{I_{0,K}}
++I_1\left(\frac1{I_{0,K}}-\frac1{I_0}\right).
+\end{align*}
+Taking $\ell_2$-norms and using
+$\left|\frac1{I_{0,K}}-\frac1{I_0}\right|
+=\frac{|I_{0,K}-I_0|}{I_0\,I_{0,K}}$ gives
+\[
+\|\widetilde m^{\mathrm{QMC}}_{t,K}(\y_t)-m_t(\y_t)\|_2
+\le \frac{\|I_{1,K}-I_1\|_2}{I_{0,K}}
++\frac{\|I_1\|_2}{I_0\,I_{0,K}}\,|I_{0,K}-I_0|.
+\]
+Using $I_{0,K}\ge I_0/2$ and $\|I_1\|_2=I_0\|m_t(\y_t)\|_2$ yields
+\[
+\|\widetilde m^{\mathrm{QMC}}_{t,K}(\y_t)-m_t(\y_t)\|_2
+\le \frac{2}{I_0}\|I_{1,K}-I_1\|_2
++\frac{2\|m_t(\y_t)\|_2}{I_0}\,|I_{0,K}-I_0|.
+\]
+Finally substitute the Koksma--Hlawka bounds for $\|I_{1,K}-I_1\|_2$
+and $|I_{0,K}-I_0|$ to obtain
+\[
+\|\widetilde m^{\mathrm{QMC}}_{t,K}(\y_t)-m_t(\y_t)\|_2
+\le
+\frac{2}{I_0}\Big(V_{\mathrm{HK}}(f_1)+\|m_t(\y_t)\|_2\,V_{\mathrm{HK}}(f_0)\Big)\,D^\ast(P_K).
+\]
+
+Applying the identity
+\[
+\big\|\widetilde s^{\mathrm{QMC}}_{t,K}(\y_t)-\nabla_{\y_t}\log p_{\Y_t}(\y_t)\big\|_2
+=\frac{\alpha_t}{\sigma_t^2}\,
+\big\|\widetilde m^{\mathrm{QMC}}_{t,K}(\y_t)-m_t(\y_t)\big\|_2,
+\]
+we obtain the result stated in the lemma.
+\end{proof}
+
+
+
+\bigskip
+
+\begin{proof}[Proof of Lemma~\ref{lem:snis-map}]
+Fix $t\in(0,1)$ and $\y_t\in\R^D$, and condition throughout on $\y_t$ (so all expectations and probabilities below are conditional on $\y_t$).
+Write
+\[
+p(\bm u):=\pi_t(\bm u\mid \y_t),\qquad
+q(\bm u):=q(\bm u\mid \y_t),\qquad
+w(\bm u):=\frac{p(\bm u)}{q(\bm u)}.
+\]
+By assumption $p\ll q$, hence $w$ is well-defined $q$-a.e.\ and satisfies $w(\bm u)\ge 0$.
+Let $\bm U_1,\ldots,\bm U_K\stackrel{\text{i.i.d.}}{\sim}q$ and denote $w_i:=w(\bm U_i)$.
+Define
+\[
+B_K:=\frac1K\sum_{i=1}^K w_i,\qquad
+A_K:=\frac1K\sum_{i=1}^K w_i\,h(\bm U_i)\in\R^{D}.
+\]
+Then the self-normalized estimator can be written as
+$
+\widetilde m_{t,K}(\y_t)=\frac{A_K}{B_K}$. 
+Moreover,
+\[
+m_t(\y_t)=\E_{p}[h(\bm U)]
+=\int h(\bm u)\,p(\bm u)\,d\bm u
+=\int h(\bm u)\,w(\bm u)\,q(\bm u)\,d\bm u
+=\E_q[w(\bm U)h(\bm U)],
+\]
+so $\E[A_K]=m_t(\y_t)$.
+
+Using $\E[A_K]=m_t$ and $\E[B_K]=1$,
+\begin{align}
+\widetilde m_{t,K}-m_t
+&=\frac{A_K}{B_K}-m_t
+=\frac{A_K-m_t B_K}{B_K}
+=\frac{(A_K-m_t)-m_t(B_K-1)}{B_K}.
+\label{eq:decomp}
+\end{align}
+Hence, by $(a+b)^2\le 2a^2+2b^2$,
+\begin{equation}
+\label{eq:sqbound1}
+\|\widetilde m_{t,K}-m_t\|_2^2
+\le \frac{2\|A_K-m_t\|_2^2}{B_K^2}
++\frac{2\|m_t\|_2^2\,(B_K-1)^2}{B_K^2}.
+\end{equation}
+
+Then we define the good event set 
+$
+\mathcal{G}:=\{B_K\ge 1/2\}$.
+On $\mathcal{G}$ we have $1/B_K^2\le 4$, so \eqref{eq:sqbound1} implies
+\begin{equation}
+\label{eq:onG}
+\|\widetilde m_{t,K}-m_t\|_2^2\mathbf{1}_{\mathcal{G}}
+\le 8\|A_K-m_t\|_2^2+8\|m_t\|_2^2(B_K-1)^2.
+\end{equation}
+On $\mathcal{G}^c$, since $w_i\ge 0$ and $B_K>0$ a.s., the normalized weights
+$\bar w_i:=w_i/\sum_{j=1}^K w_j$ form a convex combination, hence
+\[
+\widetilde m_{t,K}=\sum_{i=1}^K \bar w_i\,h(\bm U_i),
+\qquad\text{so}\qquad
+\|\widetilde m_{t,K}\|_2\le \max_i \|h(\bm U_i)\|_2\le B.
+\]
+Also $\|m_t\|_2\le \E_p\|h(\bm U)\|_2\le B$. Therefore
+\begin{equation}
+\label{eq:onGc}
+\|\widetilde m_{t,K}-m_t\|_2^2\mathbf{1}_{\mathcal{G}^c}
+\le (\|\widetilde m_{t,K}\|_2+\|m_t\|_2)^2\mathbf{1}_{\mathcal{G}^c}
+\le 4B^2\,\mathbf{1}_{\mathcal{G}^c}.
+\end{equation}
+Taking expectations and combining \eqref{eq:onG}--\eqref{eq:onGc} yields
+\begin{equation}
+\label{eq:snis-split}
+\E\|\widetilde m_{t,K}-m_t\|_2^2
+\le 8\,\E\|A_K-m_t\|_2^2
++8\|m_t\|_2^2\,\E(B_K-1)^2
++4B^2\,\P(\mathcal{G}^c).
+\end{equation}
+
+Let $\bm X_i:=w_i h(\bm U_i)\in\R^D$, so that
+$A_K=\frac1K\sum_{i=1}^K \bm X_i$ with $\E[\bm X_i]=m_t$ and i.i.d.\ across $i$. Then
+\begin{align}
+\E\|A_K-m_t\|_2^2
+&=\E\left\|\frac1K\sum_{i=1}^K (\bm X_i-\E \bm X_i)\right\|_2^2
+=\frac{1}{K}\,\E\|\bm X_1-\E \bm X_1\|_2^2
+\le \frac{1}{K}\,\E\|\bm X_1\|_2^2.
+\label{eq:varY}
+\end{align}
+Using $\|h(\bm u)\|_2\le B$ and $\bm X_1=w(\bm U)h(\bm U)$,
+\[
+\E\|\bm X_1\|_2^2
+=\E_q\!\left[w(\bm U)^2\,\|h(\bm U)\|_2^2\right]
+\le B^2\,\E_q[w(\bm U)^2]
+=B^2\,D_2(p\|q).
+\]
+Plugging into \eqref{eq:varY} yields
+\begin{equation}
+\label{eq:EY}
+\E\|A_K-m_t\|_2^2
+\le \frac{B^2}{K}\,D_2(p\|q).
+\end{equation}
+Next, since $B_K=\frac1K\sum_{i=1}^K w_i$ with $\E[w_i]=1$,
+\begin{align}
+\E(B_K-1)^2
+&=\Var(B_K)
+=\frac{1}{K}\Var(w_1)
+\le \frac{1}{K}\E[w_1^2]
+=\frac{1}{K}\,D_2(p\|q).
+\label{eq:EZ}
+\end{align}
+
+With $\mathcal{G}^c=\{B_K<1/2\}\subset\{|B_K-1|\ge 1/2\}$, Chebyshev gives
+\[
+\P(\mathcal{G}^c)\le \P(|B_K-1|\ge 1/2)\le \frac{\E(B_K-1)^2}{(1/2)^2}=4\,\E(B_K-1)^2.
+\]
+Using \eqref{eq:EZ} yields
+\begin{equation}
+\label{eq:PGc}
+\P(\mathcal{G}^c)\le \frac{4}{K}\,D_2(p\|q).
+\end{equation}
+
+Substitute \eqref{eq:EY}, \eqref{eq:EZ}, \eqref{eq:PGc} into \eqref{eq:snis-split}, and use $\|m_t\|_2\le B$:
+\begin{align*}
+\E\|\widetilde m_{t,K}-m_t\|_2^2
+&\le 8\cdot \frac{B^2}{K}D_2(p\|q)
++8 B^2\cdot \frac{1}{K}D_2(p\|q)
++4B^2\cdot \frac{4}{K}D_2(p\|q) \\
+&= \frac{32\,B^2}{K}\,D_2(p\|q).
+\end{align*}
+Finally, the score error follows from
+\[
+\widetilde s_{t,K}(\y_t;h,\pi,q)-\nabla_{\y_t}\log p_t(\y_t)
+=\frac{\alpha_t}{\sigma_t^2}\big(\widetilde m_{t,K}(\y_t)-m_t(\y_t)\big),
+\]
+so squaring and taking conditional expectations yields the stated bound.
+\end{proof}
+
+
+\bibliographystyle{chicago}
+\bibliography{preref}
+
+\end{document}

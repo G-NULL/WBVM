@@ -1,0 +1,872 @@
+\documentclass[UTF8,11pt]{ctexart}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,bm,mathtools}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+
+\title{MAGT 第 3 部分证明讲解与随机插值一步生成的可移植性分析}
+\author{}
+\date{基于 arXiv:2602.19600v1}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\cU}{\mathcal{U}}
+\newcommand{\cM}{\mathcal{M}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\KL}{\mathrm{KL}}
+\newcommand{\op}{\mathrm{op}}
+\newcommand{\supp}{\mathrm{supp}}
+\newcommand{\Ent}{\mathrm{Ent}}
+\newcommand{\Cov}{\mathrm{Cov}}
+
+\begin{document}
+
+\maketitle
+
+\section{阅读目标}
+
+论文第 3 部分的目标是证明：如果一个低维到高维的非可逆传输映射
+\[
+h:\R^d\to\R^D,\qquad d\ll D
+\]
+在一个固定 Gaussian smoothing level \(t\) 上学到了足够准确的 smoothed score，那么它的一步采样
+\[
+\widetilde Y_0=\hat h_\lambda(U),\qquad U\sim\pi
+\]
+在未加噪的原始空间中也能以 \(W_2\) 距离接近真实数据分布。
+
+这一部分的证明不是单一技术，而是四层闭环：
+\[
+\text{fixed-level score risk}
+\Longrightarrow
+\text{Fisher mismatch}
+\Longrightarrow
+W_2(P_{Y_0},P_{\widetilde Y_0})
+\Longrightarrow
+\text{finite-sample rate}.
+\]
+
+更具体地，第 3 部分由三个主要定理组成：
+\begin{enumerate}
+\item \textbf{Single-level pull-back bound}：把固定噪声层级的 score mismatch 拉回到未加噪分布的 \(W_2\) 误差。
+\item \textbf{Score-matching excess-risk bound}：用 bracketing entropy 控制经验风险最小化器的 excess risk。
+\item \textbf{Generation fidelity theorem}：合并 pull-back、经验过程、神经网络逼近和 anchor 近似误差，得到有限样本生成误差界。
+\end{enumerate}
+
+\section{模型设定与几何假设}
+
+论文假设真实数据由一个低维 latent 经过未知真传输 \(h^*\) 生成：
+\[
+Y_0=h^*(U),\qquad U\sim\pi,\qquad h^*:\cU\subset\R^{d^*}\to\R^D.
+\]
+真实分布支撑在低维流形
+\[
+\cM^*=h^*(\supp\pi)
+\]
+上或附近。学习目标是用 \(\hat h_\lambda\) 生成
+\[
+\widetilde Y_0=\hat h_\lambda(U).
+\]
+
+核心几何假设有三类。
+
+\subsection{正则传输类}
+
+要求 \(h^*\in C^{\eta+1}(\cU,B)\)，并且候选函数 \(h\in\cH_{\mathrm{reg}}\) 满足 Jacobian 满秩和条件数控制：
+\[
+\mathrm{rank}\,J_h(u)=d,\qquad
+\sigma_{\min}(J_h(u))\ge m,\qquad
+\sigma_{\max}(J_h(u))\le M.
+\]
+同时 \(J_h\) 是 \(C^{0,\gamma}\) 的，其中
+\[
+\gamma=\min(1,\eta).
+\]
+
+这组假设的作用是：保证 \(h(\cU)\) 真的是一个规则的 \(d\)-维嵌入流形，并且局部坐标图不会塌缩。
+
+\subsection{正 reach}
+
+要求流形 \(\cM\) 的 reach 至少为 \(\rho_\cM>0\)。reach 可以理解为“管状邻域内最近点投影唯一”的半径。它保证当噪声不太大时，点 \(y/\alpha_t\) 可以唯一投影回流形附近。
+
+这对附录中的 Hessian bound 至关重要，因为证明会把 \(y/\alpha_t\) 投影到流形上，然后在投影点附近做局部坐标展开。
+
+\subsection{latent prior 的 LSI}
+
+要求 \(\pi\) 满足 log-Sobolev inequality：
+\[
+\Ent_\pi(f^2)
+\le
+\frac{2}{C_{\mathrm{LSI}}(\pi)}
+\int \|\nabla f\|^2\,\dd\pi.
+\]
+
+这个假设的作用不是为了优化算法，而是为了把 Fisher divergence 转换成 \(W_2\) 距离。附录证明中先把 \(\pi\otimes \cN(0,I_D)\) 的 LSI 通过 Lipschitz 映射
+\[
+F(u,z)=\alpha_t h(u)+\sigma_t z
+\]
+推到 smoothed law 上，从而得到
+\[
+C_{\mathrm{LSI}}(q_t)
+\ge
+\frac{\min\{C_{\mathrm{LSI}}(\pi),1\}}
+{\alpha_t^2M^2+\sigma_t^2}.
+\]
+
+\section{固定层级 smoothing 与 denoiser mismatch}
+
+第 3 节使用 VP smoothing：
+\[
+Y_t=\alpha_tY_0+\sigma_tZ,
+\qquad
+\widetilde Y_t=\alpha_t\widetilde Y_0+\sigma_tZ,
+\qquad
+Z\sim\cN(0,I_D),
+\]
+其中
+\[
+\alpha_t=\sqrt{1-t},
+\qquad
+\sigma_t^2=t.
+\]
+
+令 \(p_t\) 和 \(\widetilde p_t\) 分别为 \(Y_t\) 和 \(\widetilde Y_t\) 的密度。因为加了 Gaussian noise，哪怕 \(Y_0\) 支撑在低维流形上，\(p_t\) 也在 ambient space 中有良好密度。
+
+论文定义 denoiser mismatch：
+\[
+E_{\mathrm{MAG}}(t)
+:=
+\E_{Y\sim p_t}
+\left\|
+m_{p,t}(Y)-m_{\widetilde p,t}(Y)
+\right\|_2^2,
+\]
+其中
+\[
+m_{p,t}(y)=\E[Y_0\mid Y_t=y],
+\qquad
+m_{\widetilde p,t}(y)=\E[\widetilde Y_0\mid \widetilde Y_t=y].
+\]
+
+Tweedie 公式给出：
+\[
+m_{p,t}(y)
+=
+\frac{y+t\nabla\log p_t(y)}{\alpha_t},
+\qquad
+m_{\widetilde p,t}(y)
+=
+\frac{y+t\nabla\log \widetilde p_t(y)}{\alpha_t}.
+\]
+因此
+\[
+E_{\mathrm{MAG}}(t)
+=
+\frac{t^2}{1-t}
+\E_{Y\sim p_t}
+\left\|
+\nabla\log p_t(Y)-\nabla\log\widetilde p_t(Y)
+\right\|_2^2.
+\]
+
+也就是说，denoiser mismatch 与 Fisher divergence 等价：
+\[
+E_{\mathrm{MAG}}(t)
+=
+\frac{t^2}{1-t}\,
+\mathcal J(p_t\|\widetilde p_t).
+\]
+
+\section{定理一：Single-level pull-back bound}
+
+定理一的结论是
+\[
+W_2(P_{Y_0},P_{\widetilde Y_0})
+\le
+C_{\mathrm{PB}}(t)\sqrt{E_{\mathrm{MAG}}(t)}.
+\]
+其中
+\[
+C_{\mathrm{PB}}(t)
+=
+\frac{\sqrt{1-t}}{t}
+\left(
+\Phi(t)\bar C_{\mathrm{LSI}}(t)+\Psi(t)
+\right).
+\]
+
+这一定理是整篇第 3 部分的核心。它说明只要在一个固定噪声层级 \(t\) 上控制 score 或 denoiser mismatch，就能控制未加噪的一步生成分布。
+
+\subsection{证明第 1 步：引入 VP probability flow}
+
+附录把 \(t\) 改写为标准时间参数 \(s\)：
+\[
+t=\sigma^2(s)=1-e^{-s},
+\qquad
+s=\Gamma(t)=-\log(1-t).
+\]
+记 \(T=\Gamma(t)\)。在 VP probability flow 中，密度 \(p_s\) 的速度场为
+\[
+v_s(x)
+=
+-\frac12x-\nabla\log p_s(x)
+\]
+在常数 schedule 下的形式。
+
+对真实 smoothed density \(p_s\) 和模型 smoothed density \(\widetilde p_s\)，附录使用一个变量系数 pull-back 引理：
+\[
+W_2(p_0,q_0)
+\le
+e^{\int_0^T L}
+W_2(p_T,q_T)
++
+e^{\int_0^T L}
+\int_0^T
+e^{\int_u^T(K-L)}
+\dd u\,
+\sqrt{J_T}.
+\]
+这里
+\[
+J_T
+=
+\int
+\left\|
+\nabla\log p_T-\nabla\log q_T
+\right\|^2q_T.
+\]
+
+直觉是：如果两个分布在时间 \(T\) 已经接近，并且 score gap 沿着反向 probability flow 不会爆炸，那么可以把时间 \(T\) 的误差拉回到时间 \(0\)。
+
+\subsection{证明第 2 步：用 LSI 控制平滑层的 \(W_2\)}
+
+pull-back 引理右侧第一项含有
+\[
+W_2(p_t,\widetilde p_t).
+\]
+附录用 LSI \(\Rightarrow\) Talagrand \(\Rightarrow\) Fisher 链式不等式：
+\[
+W_2^2(q,p)
+\le
+\frac{2}{\rho}\KL(q\|p)
+\le
+\frac{1}{\rho^2}\mathcal J(q\|p).
+\]
+因此
+\[
+W_2(p_t,\widetilde p_t)
+\le
+\bar C_{\mathrm{LSI}}(t)\sqrt{J_T}.
+\]
+
+这里
+\[
+\bar C_{\mathrm{LSI}}(t)
+\le
+\frac{(1-t)M^2+t}
+{\min\{C_{\mathrm{LSI}}(\pi),1\}}.
+\]
+
+\subsection{证明第 3 步：Hessian bound 给出 \(L(s)\) 和 \(K(s)\)}
+
+pull-back 引理需要两个控制量：
+\[
+\|\nabla v_s\|_{\op}\le L(s),
+\qquad
+\frac{\dd}{\dd s}J_s\le 2K(s)J_s.
+\]
+
+附录用 Hessian bound 建立
+\[
+\|\nabla^2\log p_s\|_{\op}
+\vee
+\|\nabla^2\log \widetilde p_s\|_{\op}
+\le
+L_*(s),
+\]
+其中
+\[
+L_*(s)
+=
+C_T^{(\gamma)}
+\frac{\sigma_s^{\gamma-2}}{\alpha_s^\gamma}
++
+\frac{(C_S^{(\gamma)})^2}{1-\theta_t}
+\frac{\sigma_s^{2\gamma-2}}{\alpha_s^{2\gamma}}.
+\]
+
+由于
+\[
+v_s(x)=-\frac12x-\nabla\log\rho_s(x),
+\]
+可得
+\[
+L(s)=\frac12+L_*(s).
+\]
+score-gap growth lemma 进一步给出
+\[
+K(s)=\frac12+4L_*(s).
+\]
+
+\subsection{证明第 4 步：几何 Hessian bound 的来源}
+
+Hessian bound 是最几何的一步。它从 Tweedie Hessian 公式出发：
+\[
+\nabla^2\log p_s(y)
+=
+\frac{\alpha_s^2}{\sigma_s^4}
+\Cov(X\mid Y_s=y)
+-
+\frac1{\sigma_s^2}I_D.
+\]
+
+然后把 \(y/\alpha_s\) 投影到流形上：
+\[
+x_0=\Pi_{\cM}(y/\alpha_s).
+\]
+reach 条件保证投影唯一。再在 \(x_0\) 附近做局部 chart：
+\[
+x(\xi)
+=
+x_0+J\xi+R(\xi),
+\qquad
+\|R(\xi)\|\le C\|\xi\|^{1+\gamma}.
+\]
+
+条件后验在切向方向的协方差近似是
+\[
+\Cov_T
+=
+\frac{\sigma_s^2}{\alpha_s^2}\Pi_T
++
+O\left(
+\frac{\sigma_s^{2+\gamma}}{\alpha_s^{2+\gamma}}
+\right),
+\]
+法向方向的协方差更小：
+\[
+\Cov_N
+=
+O\left(
+\frac{\sigma_s^{2+2\gamma}}{\alpha_s^{2+2\gamma}}
+\right).
+\]
+
+代回 Hessian 公式后，切向上的主项抵消，而法向上保留强负曲率：
+\[
+\Pi_NH_s\Pi_N
+\preceq
+-
+\left(
+\sigma_s^{-2}
+-
+C\frac{\sigma_s^{2\gamma-2}}{\alpha_s^{2\gamma}}
+\right)\Pi_N.
+\]
+这就是为什么证明需要 \(t\) 落在 tube regime 中：噪声不能大到离开流形的唯一投影邻域。
+
+\subsection{证明第 5 步：把 \(\sqrt{J_T}\) 换成 \(\sqrt{E_{\mathrm{MAG}}(t)}\)}
+
+最后用
+\[
+E_{\mathrm{MAG}}(t)
+=
+\frac{t^2}{1-t}J_T
+\]
+得到
+\[
+\sqrt{J_T}
+=
+\frac{\sqrt{1-t}}{t}
+\sqrt{E_{\mathrm{MAG}}(t)}.
+\]
+代回 pull-back 结果，即得定理一。
+
+\section{定理二：Score-matching excess-risk bound}
+
+第 3 节定义理想无限 anchor 损失：
+\[
+\ell(y_t,y_0;h)
+=
+\left\|
+s_t(y_t;h)
+-
+\nabla_{y_t}\log p(y_t\mid y_0)
+\right\|_2^2,
+\]
+其中
+\[
+s_t(\cdot;h)=\nabla\log p_t^h(\cdot).
+\]
+
+总体风险为
+\[
+R(h)=\E[\ell(Y_t,Y_0;h)].
+\]
+excess risk 定义为
+\[
+\rho^2(h^*,h)
+=
+R(h)-R(h^*).
+\]
+
+\subsection{正交分解}
+
+训练 target 是 conditional score：
+\[
+\nabla_{y_t}\log p(Y_t\mid Y_0).
+\]
+它满足无偏性：
+\[
+\E[
+\nabla_{y_t}\log p(Y_t\mid Y_0)
+\mid Y_t
+]
+=
+\nabla\log p_t(Y_t).
+\]
+于是得到正交分解：
+\[
+R(h)
+=
+R(h^*)
++
+\E_{Y\sim p_t}
+\left\|
+s_t(Y;h)-s_t(Y;h^*)
+\right\|_2^2.
+\]
+所以
+\[
+\rho^2(h^*,h)
+=
+\mathcal J(p_t\|p_t^h).
+\]
+
+这一点非常关键：它使得经验 score-matching 风险真正校准到固定层级 Fisher divergence。
+
+\subsection{经验过程证明结构}
+
+实际训练用有限 anchor 损失 \(\ell_K\)。假设它与理想损失的偏差满足
+\[
+\Delta_K
+:=
+\sup_{h,x}|\ell_K(x;h)-\ell(x;h)|
+\le
+\varepsilon^2/8.
+\]
+
+令 \(h^\#\) 是函数类 \(\cH\) 中的 population best approximation。附录把坏事件
+\[
+\rho(h^*,\hat h_\lambda)\ge\varepsilon
+\]
+分成风险 shell：
+\[
+A_l
+=
+\left\{
+h:
+2^l\varepsilon^2
+\le
+\rho^2(h^*,h)
+<
+2^{l+1}\varepsilon^2
+\right\}.
+\]
+
+如果 \(\hat h_\lambda\in A_l\)，因为它最小化经验 \(\ell_K\)，经验过程必须出现足够大的偏差：
+\[
+\sup_{h\in A_l}
+\nu_n\{\ell_K(h^\#)-\ell_K(h)\}
+\gtrsim
+\sqrt n\,(2^l-\tfrac12)\varepsilon^2.
+\]
+
+然后用 Bernstein moment condition、variance--mean bound 和 bracketing entropy 积分控制这个概率。
+最终得到
+\[
+\Pr\left(
+\rho(h^*,\hat h_\lambda)\ge\varepsilon
+\right)
+\le
+4\exp(-c_en\varepsilon^2).
+\]
+
+\subsection{这个证明模块的意义}
+
+这部分并不强依赖 score 的特殊几何。它更像一个通用的 \(M\)-estimator 证明模板：
+\begin{enumerate}
+\item population loss 必须有正交分解；
+\item finite-anchor loss 必须是理想 loss 的小扰动；
+\item loss class 需要 variance--mean 和 Bernstein 条件；
+\item bracketing entropy 积分要能解出 \(\varepsilon\) 的量级。
+\end{enumerate}
+
+因此，这个模块是最容易迁移到你的 velocity matching 方案中的部分。
+
+\section{定理三：有限样本生成误差}
+
+定理三把前面的结果合并为：
+\[
+\E W_2(P_{Y_0},P_{\widetilde Y_0})
+\le
+C_{\mathrm{PB}}(t)
+\left[
+c_1(WL)^{-\frac{2(\eta+1)}{d^*}}
++
+c_2\sigma_t^{-(\eta+2)}
+\left(
+\frac{(WL)^2\log^5(WL)}{n}
+\right)^{\frac{\eta+1}{2\eta}}
++
+c_3\varepsilon(\widetilde\pi,t,K)
+\right].
+\]
+
+三项分别对应：
+\begin{enumerate}
+\item \textbf{神经网络逼近误差}：
+\[
+(WL)^{-\frac{2(\eta+1)}{d^*}}.
+\]
+这来自 \(h^*\in C^{\eta+1}\) 的 ReLU 逼近率。
+\item \textbf{统计估计误差}：
+\[
+\sigma_t^{-(\eta+2)}
+\left(
+\frac{(WL)^2\log^5(WL)}{n}
+\right)^{\frac{\eta+1}{2\eta}}.
+\]
+这来自 bracketing entropy 和经验过程控制。
+\item \textbf{anchor 近似误差}：
+\[
+\varepsilon(\widetilde\pi,t,K).
+\]
+它衡量有限 anchor/self-normalized importance sampling 和理想 posterior score 之间的差距。
+\end{enumerate}
+
+选择
+\[
+WL
+\asymp
+\left(
+\frac{n}{\log^5 n}
+\right)^{\frac{d^*}{2(2\eta+d^*)}}
+\]
+可平衡前两项，得到
+\[
+\E W_2(P_{Y_0},P_{\widetilde Y_0})
+\lesssim
+C_{\mathrm{PB}}(t)
+\left[
+\left(
+\frac{n}{\log^5 n}
+\right)^{-\frac{\eta+1}{2\eta+d^*}}
++
+\varepsilon(\widetilde\pi,t,K)
+\right].
+\]
+
+这里最重要的是指数只含 intrinsic dimension \(d^*\)，不是 ambient dimension \(D\)。
+
+\section{对你的随机插值一步生成想法的移植性判断}
+
+你上面的想法是使用随机插值速度场，例如
+\[
+I_\tau
+=
+(1-\tau)X_0+\tau X_1+\gamma_\tau\varepsilon,
+\qquad
+\gamma_\tau=\sqrt{2\tau(1-\tau)},
+\]
+并用一步生成器
+\[
+X_1^\theta=h_\theta(U)
+\]
+诱导模型插值
+\[
+I_{\theta,\tau}
+=
+(1-\tau)X_0+\tau h_\theta(U)+\gamma_\tau\varepsilon.
+\]
+
+模型速度场为
+\[
+v_{\theta,\tau}(y)
+=
+\E\left[
+-X_0+h_\theta(U)+\dot\gamma_\tau\varepsilon
+\mid I_{\theta,\tau}=y
+\right].
+\]
+
+\subsection{结论先行}
+
+\textbf{不能原封不动移植第 3 部分的全部证明，但可以移植其中相当大的一部分。}
+
+更精确地说：
+\begin{enumerate}
+\item 如果你的 ``velocity'' 版本其实使用的是 Gaussian corruption path
+\[
+Y_\tau=\alpha_\tau X+\sigma_\tau\varepsilon,
+\]
+那么 velocity matching 与 denoising posterior matching 只差一个确定系数。此时第 3 部分基本可以移植。
+\item 如果你使用真正的三项 stochastic interpolant
+\[
+I_\tau=a_\tau X_0+b_\tau X_1+\gamma_\tau\varepsilon,
+\]
+那么经验风险/anchor 近似/神经网络逼近这些模块可迁移，但最核心的 single-level pull-back bound 需要重新证明。
+\end{enumerate}
+
+\section{为什么 Gaussian velocity 版本几乎可以直接继承}
+
+考虑
+\[
+Y_\tau=\alpha_\tau X+\sigma_\tau\varepsilon.
+\]
+sample-wise velocity 是
+\[
+\dot Y_\tau
+=
+\dot\alpha_\tau X+\dot\sigma_\tau\varepsilon.
+\]
+因为
+\[
+\varepsilon
+=
+\frac{y-\alpha_\tau X}{\sigma_\tau},
+\]
+所以真实速度场为
+\[
+v_{\mathrm{data},\tau}(y)
+=
+\frac{\dot\sigma_\tau}{\sigma_\tau}y
++
+\left(
+\dot\alpha_\tau
+-
+\frac{\alpha_\tau\dot\sigma_\tau}{\sigma_\tau}
+\right)
+\E[X\mid Y_\tau=y].
+\]
+
+模型速度场同理：
+\[
+v_{\theta,\tau}(y)
+=
+\frac{\dot\sigma_\tau}{\sigma_\tau}y
++
+\left(
+\dot\alpha_\tau
+-
+\frac{\alpha_\tau\dot\sigma_\tau}{\sigma_\tau}
+\right)
+m_{\theta,\tau}(y).
+\]
+
+因此 velocity loss 与 denoiser mismatch 等价：
+\[
+\mathcal L_{\mathrm{vel}}(\theta)
+=
+\left(
+\dot\alpha_\tau
+-
+\frac{\alpha_\tau\dot\sigma_\tau}{\sigma_\tau}
+\right)^2
+\E\|m_{\theta,\tau}(Y_\tau)-X\|^2.
+\]
+
+而 denoiser mismatch 又通过 Tweedie 公式等价于 Fisher divergence。于是第 3 部分的 proof chain 仍然成立：
+\[
+\text{velocity loss}
+\Longleftrightarrow
+\text{denoiser mismatch}
+\Longleftrightarrow
+\text{Fisher mismatch}
+\Longrightarrow
+W_2.
+\]
+
+\section{为什么三项 stochastic interpolant 不能直接继承}
+
+对真正的 stochastic interpolant：
+\[
+I_\tau=a_\tau X_0+b_\tau X_1+\gamma_\tau\varepsilon,
+\]
+模型密度是
+\[
+p_{\theta,\tau}(y)
+=
+\iint
+\phi_{\gamma_\tau}
+\left(
+y-a_\tau x_0-b_\tau h_\theta(u)
+\right)
+p_0(x_0)\pi(u)\dd x_0\dd u.
+\]
+
+速度场是条件期望：
+\[
+v_{\theta,\tau}(y)
+=
+\E[
+\dot a_\tau X_0+\dot b_\tau h_\theta(U)+\dot\gamma_\tau\varepsilon
+\mid I_{\theta,\tau}=y].
+\]
+
+这时有一个好消息：velocity matching 仍然有正交分解。若
+\[
+v_{\mathrm{data},\tau}(y)
+=
+\E[\dot I_\tau\mid I_\tau=y],
+\]
+则
+\[
+\E\|v_{\theta,\tau}(I_\tau)-\dot I_\tau\|^2
+=
+\E\|v_{\mathrm{data},\tau}(I_\tau)-\dot I_\tau\|^2
++
+\E\|v_{\theta,\tau}(I_\tau)-v_{\mathrm{data},\tau}(I_\tau)\|^2.
+\]
+
+所以第 3 部分的经验风险证明思路可以迁移。
+
+但坏消息是：这个 excess risk 不再天然等于 Fisher divergence。也就是说，一般没有
+\[
+\E\|v_{\theta,\tau}-v_{\mathrm{data},\tau}\|^2
+\asymp
+\mathcal J(p_\tau\|p_{\theta,\tau}).
+\]
+因此论文中用到的
+\[
+\text{LSI}+\text{Fisher}
+\Longrightarrow
+W_2(p_\tau,p_{\theta,\tau})
+\]
+这一环不能直接使用。
+
+\section{如果要移植，需要补的新定理}
+
+三项 stochastic interpolant 方案要获得 MAGT 第 3 节同等级的理论，至少需要补一个新的 single-level velocity pull-back theorem。
+
+理想形式可能是：
+\[
+W_2(P_{X_1},P_{h_\theta(U)})
+\le
+A(\tau)W_2(p_\tau,p_{\theta,\tau})
++
+B(\tau)
+\|v_{\mathrm{data},\tau}-v_{\theta,\tau}\|_{L^2(p_\tau)}.
+\]
+
+但要从固定单层 \(\tau\) 推回 endpoint \(\tau=1\)，还需要一个类似 score-gap growth lemma 的 velocity-gap growth lemma：
+\[
+\frac{\dd}{\dd s}
+\|v_s-v_s^\theta\|_{L^2(p_s)}^2
+\le
+C(s)
+\|v_s-v_s^\theta\|_{L^2(p_s)}^2.
+\]
+
+这一步在 MAGT 中由 VP probability flow 的 score PDE 和 Hessian bound 完成；在一般 stochastic interpolant 中并没有现成结论，需要重新建立。
+
+\section{维度率能否保留}
+
+这是最容易被忽略的地方。MAGT 的 rate 依赖 intrinsic dimension \(d^*\)，因为模型平滑的是
+\[
+\alpha_t h(U)+\sigma_tZ,
+\]
+低维结构来自 \(h(U)\)，Gaussian noise 只是为了让 ambient density 存在。
+
+而三项 stochastic interpolant 有
+\[
+I_\tau=(1-\tau)X_0+\tau h(U)+\gamma_\tau\varepsilon.
+\]
+如果 \(X_0\sim\cN(0,I_D)\) 是全维 Gaussian，那么中间分布天然含有全维 base component。这样一来，证明中的复杂度和几何常数很可能重新依赖 ambient dimension \(D\)，从而失去 MAGT 最重要的 intrinsic-dimension rate。
+
+要尽量保留 intrinsic-dimension 优势，可以考虑：
+\begin{enumerate}
+\item 让 \(X_0\) 也是低维生成的，例如 \(X_0=g_0(V)\)，而不是全维 Gaussian；
+\item 令 \(X_0\) 与 \(U\) 共享低维 latent；
+\item 选择靠近终点的固定 \(\tau\)，使 \((1-\tau)X_0\) 足够小；
+\item 使用 Gaussian-corruption velocity 版本，而不是完整三项 bridge；
+\item 证明新的 effective dimension bound，说明 \(X_0\) 项不会主导复杂度。
+\end{enumerate}
+
+\section{可移植模块清单}
+
+\begin{center}
+\begin{tabular}{p{0.33\linewidth}p{0.23\linewidth}p{0.34\linewidth}}
+\toprule
+证明模块 & 可移植性 & 说明 \\
+\midrule
+posterior anchor 近似 & 高 & 三项 interpolant 可用 \((x_{0,k},u_k)\) anchors。\\
+经验风险正交分解 & 高 & velocity matching 也有 conditional expectation projection。\\
+bracketing entropy 经验过程 & 中高 & 损失类、Bernstein、variance--mean 需按 velocity loss 重写。\\
+ReLU 逼近 \(h^*\) & 高 & 只要仍学习 endpoint map \(h_\theta\)。\\
+LSI 推送 & 中 & 若 \(X_0\) 全维，LSI 易得但 intrinsic dimension 可能丢失。\\
+Hessian/tube 几何引理 & 中低 & Gaussian corruption endpoint 可用；三项 bridge 需重做。\\
+single-level pull-back & 低 & 核心步骤，三项 velocity 方案必须新证。\\
+intrinsic-dimension \(W_2\) rate & 不确定 & 取决于 \(X_0\) 的维度和新 pull-back 定理。\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{建议的理论路线}
+
+如果你要把这个 idea 写成可证明的方法，建议分两条路线。
+
+\subsection{路线 A：保守可证路线}
+
+使用 Gaussian-corruption velocity：
+\[
+Y_\tau=\alpha_\tau X+\sigma_\tau\varepsilon.
+\]
+把 velocity target 写成 denoiser posterior mean 的线性变换。这样可以最大限度继承 MAGT 第 3 节：
+\[
+\mathcal L_{\mathrm{vel}}
+\asymp
+\E\|m_{\theta,\tau}(Y_\tau)-X\|^2
+\asymp
+\mathcal J(p_\tau\|p_{\theta,\tau}).
+\]
+
+这条路线理论最稳，但 stochastic interpolant 的新意较弱。
+
+\subsection{路线 B：真正 stochastic interpolant 路线}
+
+使用
+\[
+I_\tau=(1-\tau)X_0+\tau X_1+\sqrt{2\tau(1-\tau)}\varepsilon.
+\]
+证明顺序应当是：
+\begin{enumerate}
+\item 建立 anchor velocity estimator 的一致性；
+\item 建立 velocity loss 的正交分解；
+\item 建立 finite-anchor perturbation bound；
+\item 建立 velocity-loss class 的 bracketing entropy；
+\item 证明新的 single-level velocity pull-back；
+\item 分析 \(X_0\) 项对 intrinsic dimension rate 的影响。
+\end{enumerate}
+
+这条路线更有创新性，但证明工作量明显更大。
+
+\section{最终判断}
+
+对你上面的想法，第 3 部分证明的移植结论是：
+\begin{center}
+\fbox{
+\begin{minipage}{0.88\linewidth}
+\centering
+可部分移植；若使用 Gaussian velocity 版本基本可移植；若使用三项 stochastic interpolant，则核心 single-level pull-back 需要重证。
+\end{minipage}
+}
+\end{center}
+
+如果目标是尽快形成一个严谨、可写论文的方法，建议先走 Gaussian fixed-level velocity 版本，作为 MAGT 的 velocity-field reinterpretation；然后再把三项 stochastic interpolant 作为扩展，重点证明新的 single-level velocity pull-back theorem。
+
+\end{document}

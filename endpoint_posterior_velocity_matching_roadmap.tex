@@ -1,0 +1,973 @@
+\documentclass[UTF8,11pt]{ctexart}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,bm,mathtools}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+
+\title{One-step Generative Transport via Endpoint-posterior Velocity Matching\\
+\large 方法主线、已有基础与重点设计模块}
+\author{梁凡}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\cN}{\mathcal{N}}
+\newcommand{\cL}{\mathcal{L}}
+\newcommand{\cH}{\mathcal{H}}
+\newcommand{\dd}{\,\mathrm{d}}
+\newcommand{\softmax}{\operatorname{softmax}}
+\newcommand{\ESS}{\operatorname{ESS}}
+\newcommand{\KL}{\operatorname{KL}}
+\newcommand{\W}{\mathcal{W}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+
+\begin{document}
+
+\maketitle
+
+\section{一句话主线}
+
+本文主线可以定为：
+\begin{center}
+\begin{minipage}{0.88\linewidth}
+\centering
+\textbf{One-step generative transport via endpoint-posterior velocity matching.}
+\end{minipage}
+\end{center}
+
+中文表述是：\textbf{通过端点后验速度匹配来学习一步生成传输。}
+
+它的关键不是再训练一个自由形式的速度网络 \(v_\theta(x,t)\)，而是要求速度场必须由一个低维到高维的一步生成器
+\[
+h_\theta:\R^d\to\R^D
+\]
+诱导出来。这样最终采样仍然是一步：
+\[
+u\sim\pi(u),\qquad x_{\mathrm{gen}}=h_\theta(u).
+\]
+
+因此，这条线与普通 flow matching 或 stochastic interpolants 的区别是：
+\[
+\text{ordinary velocity model: }v_\theta(x,t)
+\]
+被替换成
+\[
+\text{endpoint-induced velocity model: }
+v_{\theta,\tau}(x)
+=
+\E_\theta[\dot X_\tau\mid X_\tau=x],
+\]
+其中条件期望的端点 \(X_1^\theta=h_\theta(U)\) 由同一个 one-step generator 给出。
+
+\section{核心问题设定}
+
+给定真实数据端点
+\[
+X_1\sim p_{\mathrm{data}},
+\]
+base endpoint
+\[
+X_0\sim p_0,
+\]
+以及 latent 变量
+\[
+U\sim\pi.
+\]
+我们希望学习
+\[
+X_1^\theta=h_\theta(U)
+\]
+使得 \(h_\theta(U)\) 接近 \(p_{\mathrm{data}}\)。
+
+最简单的线性插值为
+\[
+X_\tau=(1-\tau)X_0+\tau X_1,\qquad \tau\in(0,1).
+\]
+真实 sample-wise velocity 是
+\[
+\dot X_\tau=X_1-X_0.
+\]
+
+模型端用一步生成器替代真实终点：
+\[
+X_{\theta,\tau}=(1-\tau)X_0+\tau h_\theta(U).
+\]
+模型速度场定义为
+\[
+v_{\theta,\tau}(x_\tau)
+=
+\E_\theta[h_\theta(U)-X_0\mid X_{\theta,\tau}=x_\tau].
+\]
+
+\section{端点后验形式}
+
+在线性无噪声插值中，给定 \(x_\tau\) 和 \(U=u\)，可以反推出
+\[
+X_0
+=
+\frac{x_\tau-\tau h_\theta(u)}{1-\tau}.
+\]
+因此模型速度场可以写成
+\begin{align}
+v_{\theta,\tau}(x_\tau)
+&=
+\E_\theta
+\left[
+h_\theta(U)
+-
+\frac{x_\tau-\tau h_\theta(U)}{1-\tau}
+\mid X_{\theta,\tau}=x_\tau
+\right]\nonumber\\
+&=
+\frac{1}{1-\tau}
+\E_\theta[h_\theta(U)\mid X_{\theta,\tau}=x_\tau]
+-
+\frac{1}{1-\tau}x_\tau.
+\end{align}
+
+令
+\[
+m_{\theta,\tau}(x_\tau)
+:=
+\E_\theta[h_\theta(U)\mid X_{\theta,\tau}=x_\tau],
+\]
+则
+\[
+v_{\theta,\tau}(x_\tau)
+=
+\frac{m_{\theta,\tau}(x_\tau)-x_\tau}{1-\tau}.
+\]
+
+真实 target 也可写为
+\[
+X_1-X_0
+=
+\frac{X_1-X_\tau}{1-\tau}.
+\]
+所以 velocity matching loss
+\[
+\cL_{\mathrm{vel}}(\theta)
+=
+\E
+\left[
+\left\|
+v_{\theta,\tau}(X_\tau)-(X_1-X_0)
+\right\|_2^2
+\right]
+\]
+等价于
+\[
+\cL_{\mathrm{vel}}(\theta)
+=
+\frac{1}{(1-\tau)^2}
+\E
+\left[
+\left\|
+m_{\theta,\tau}(X_\tau)-X_1
+\right\|_2^2
+\right].
+\]
+
+\section{线性有噪声插值的具体推导}
+
+上一节的推导依赖无噪声线性插值
+\[
+X_{\theta,\tau}=(1-\tau)X_0+\tau h_\theta(U).
+\]
+为了沿用第三节的记号，下文仍用 \(x_\tau\) 表示给定的中间层样本点；仅用上标 \(\gamma\)
+区分带噪声的中间变量：
+\[
+X_{\theta,\tau}^{\gamma}
+=
+(1-\tau)X_0+\tau h_\theta(U)+\gamma_\tau\varepsilon,
+\qquad
+\varepsilon\sim\cN(0,I_D).
+\]
+其中 \(X_0\sim p_0\)、\(U\sim\pi\)，且三者相互独立。
+
+\subsection{一般 joint posterior 形式}
+
+给定 \(X_0=x_0\) 和 \(U=u\)，\(X_{\theta,\tau}^{\gamma}\) 的似然为
+\[
+L_\tau(x_\tau\mid x_0,u)
+=
+\phi\!\left(
+x_\tau;\,
+(1-\tau)x_0+\tau h_\theta(u),
+\gamma_\tau^2 I_D
+\right).
+\]
+因此 joint endpoint-posterior 满足
+\[
+p_\theta(x_0,u\mid x_\tau)
+\propto
+p_0(x_0)\pi(u)L_\tau(x_\tau\mid x_0,u).
+\]
+
+sample-wise velocity 为
+\[
+\dot X_{\theta,\tau}^{\gamma}
+=
+h_\theta(U)-X_0+\dot\gamma_\tau\varepsilon.
+\]
+由于在给定 \(x_\tau,x_0,u\) 时
+\[
+\varepsilon
+=
+\frac{
+x_\tau-(1-\tau)x_0-\tau h_\theta(u)
+}{
+\gamma_\tau
+},
+\]
+模型诱导的条件速度场可以写成
+\begin{align}
+v_{\theta,\tau}^{\gamma}(x_\tau)
+&=
+\E_\theta
+\left[
+h_\theta(U)-X_0+\dot\gamma_\tau\varepsilon
+\mid X_{\theta,\tau}^{\gamma}=x_\tau
+\right]\nonumber\\
+&=
+\E_\theta
+\left[
+h_\theta(U)-X_0
++\lambda_\tau
+\left\{
+x_\tau-(1-\tau)X_0-\tau h_\theta(U)
+\right\}
+\mid X_{\theta,\tau}^{\gamma}=x_\tau
+\right],
+\end{align}
+其中
+\[
+\lambda_\tau:=\frac{\dot\gamma_\tau}{\gamma_\tau}.
+\]
+
+沿用第三节的 endpoint posterior mean 记号：
+\[
+m_{\theta,\tau}(x_\tau)
+:=
+\E_\theta[h_\theta(U)\mid X_{\theta,\tau}^{\gamma}=x_\tau].
+\]
+此外只额外定义一个 base endpoint posterior mean：
+\[
+m_{\theta,\tau}^{0}(x_\tau)
+:=
+\E_\theta[X_0\mid X_{\theta,\tau}^{\gamma}=x_\tau].
+\]
+则
+\begin{align}
+v_{\theta,\tau}^{\gamma}(x_\tau)
+&=
+m_{\theta,\tau}(x_\tau)-m_{\theta,\tau}^{0}(x_\tau)\nonumber\\
+&\quad+
+\lambda_\tau
+\left[
+x_\tau-(1-\tau)m_{\theta,\tau}^{0}(x_\tau)-\tau m_{\theta,\tau}(x_\tau)
+\right].
+\end{align}
+
+同时，带噪声 bridge 的 score 为
+\[
+s_{\theta,\tau}^{\gamma}(x_\tau)
+=
+\nabla_{x_\tau}\log p_{\theta,\tau}^{\gamma}(x_\tau)
+=
+-
+\frac{
+x_\tau-(1-\tau)m_{\theta,\tau}^{0}(x_\tau)-\tau m_{\theta,\tau}(x_\tau)
+}{
+\gamma_\tau^2
+}.
+\]
+因此速度场也可写成
+\[
+v_{\theta,\tau}^{\gamma}(x_\tau)
+=
+m_{\theta,\tau}(x_\tau)-m_{\theta,\tau}^{0}(x_\tau)
+-\gamma_\tau\dot\gamma_\tau s_{\theta,\tau}^{\gamma}(x_\tau).
+\]
+这说明：有噪声线性插值下，velocity 不再只由第三节中的 endpoint posterior mean
+\[
+m_{\theta,\tau}(x_\tau)=
+\E_\theta[h_\theta(U)\mid X_{\theta,\tau}^{\gamma}=x_\tau]
+\]
+决定，还会显式混入 base endpoint posterior mean \(m_{\theta,\tau}^{0}(x_\tau)\)
+和 bridge score \(s_{\theta,\tau}^{\gamma}(x_\tau)\)。
+
+若取
+\[
+\gamma_\tau=\sqrt{2\tau(1-\tau)},
+\]
+则
+\[
+\gamma_\tau\dot\gamma_\tau=1-2\tau,
+\qquad
+\lambda_\tau
+=
+\frac{1-2\tau}{2\tau(1-\tau)}.
+\]
+代回上式可得
+\[
+v_{\theta,\tau}^{\gamma}(x_\tau)
+=
+\frac{1}{2(1-\tau)}m_{\theta,\tau}(x_\tau)
+-
+\frac{1}{2\tau}m_{\theta,\tau}^{0}(x_\tau)
++
+\frac{1-2\tau}{2\tau(1-\tau)}x_\tau.
+\]
+等价地，
+\[
+v_{\theta,\tau}^{\gamma}(x_\tau)
+=
+\frac{m_{\theta,\tau}(x_\tau)-x_\tau}{1-\tau}
+-s_{\theta,\tau}^{\gamma}(x_\tau)
+=
+\frac{x_\tau-m_{\theta,\tau}^{0}(x_\tau)}{\tau}
++s_{\theta,\tau}^{\gamma}(x_\tau).
+\]
+
+\subsection{Gaussian base 下的低维 anchor 形式}
+
+如果进一步取
+\[
+p_0=\cN(0,I_D),
+\qquad
+\gamma_\tau^2=2\tau(1-\tau),
+\]
+则可以把 \(X_0\) 积掉，只在 latent \(U\) 上做 anchors。
+给定 \(U=u\) 时，
+\[
+X_{\theta,\tau}^{\gamma}\mid U=u
+\sim
+\cN
+\left(
+\tau h_\theta(u),
+\left[(1-\tau)^2+\gamma_\tau^2\right]I_D
+\right).
+\]
+记
+\[
+S_\tau=(1-\tau)^2+\gamma_\tau^2.
+\]
+则
+\[
+p_\theta(u\mid x_\tau)
+\propto
+\pi(u)
+\phi
+\left(
+x_\tau;\tau h_\theta(u),S_\tau I_D
+\right).
+\]
+
+在该线性高斯子问题中，
+\[
+\E[X_0\mid x_\tau,u]
+=
+\frac{1-\tau}{S_\tau}
+\left(
+x_\tau-\tau h_\theta(u)
+\right),
+\]
+并且
+\[
+\E[\varepsilon\mid x_\tau,u]
+=
+\frac{\gamma_\tau}{S_\tau}
+\left(
+x_\tau-\tau h_\theta(u)
+\right).
+\]
+所以给定 \(x_\tau,u\) 的 posterior velocity contribution 是
+\[
+a_\tau(x_\tau,u)
+=
+h_\theta(u)
++
+\frac{
+\gamma_\tau\dot\gamma_\tau-(1-\tau)
+}{
+S_\tau
+}
+\left(
+x_\tau-\tau h_\theta(u)
+\right).
+\]
+
+对特殊选择 \(\gamma_\tau^2=2\tau(1-\tau)\)，有
+\[
+S_\tau=1-\tau^2,
+\qquad
+\gamma_\tau\dot\gamma_\tau=1-2\tau.
+\]
+因此上式简化为
+\[
+a_\tau(x_\tau,u)
+=
+\frac{
+h_\theta(u)-\tau x_\tau
+}{
+1-\tau^2
+}.
+\]
+从而模型速度场为
+\[
+v_{\theta,\tau}^{\gamma}(x_\tau)
+=
+\frac{
+m_{\theta,\tau}(x_\tau)-\tau x_\tau
+}{
+1-\tau^2
+},
+\]
+其中
+\[
+m_{\theta,\tau}(x_\tau)
+:=
+\E_\theta[h_\theta(U)\mid X_{\theta,\tau}^{\gamma}=x_\tau].
+\]
+
+这给出一个很干净的 anchor 估计器。取 anchors \(u_k\sim q(u\mid x_\tau)\)，令
+\[
+h_k=h_\theta(u_k),
+\]
+则 logits 可取
+\[
+z_k
+=
+-
+\frac{
+\|x_\tau-\tau h_k\|_2^2
+}{
+2(1-\tau^2)
+}
++
+\log\pi(u_k)
+-
+\log q(u_k\mid x_\tau).
+\]
+归一化
+\[
+w_k=\frac{\exp(z_k)}{\sum_{j=1}^K\exp(z_j)}
+\]
+后，
+\[
+\widehat m_{\theta,K,\tau}(x_\tau)
+=
+\sum_{k=1}^K w_k h_\theta(u_k),
+\qquad
+\widehat v_{\theta,K,\tau}^{\gamma}(x_\tau)
+=
+\frac{
+\widehat m_{\theta,K,\tau}(x_\tau)-\tau x_\tau
+}{
+1-\tau^2
+}.
+\]
+若 \(q=\pi\)，则
+\[
+w_k
+=
+\softmax_k
+\left(
+-
+\frac{
+\|x_\tau-\tau h_\theta(u_k)\|_2^2
+}{
+2(1-\tau^2)
+}
+\right).
+\]
+和无噪声版本中的 \((1-\tau)^2\) 分母相比，这里的分母是
+\(1-\tau^2\)。当 \(\tau\to 1\) 时，权重仍然会变尖，但尖锐程度从
+\((1-\tau)^{-2}\) 降为 \((1-\tau)^{-1}\)，因此 anchors 的数值稳定性更好。
+
+\subsection{对应训练目标}
+
+真实数据端采用同样的 noisy bridge：
+\[
+X_\tau^{\gamma}
+=
+(1-\tau)X_0+\tau X_1+\gamma_\tau\varepsilon,
+\]
+sample-wise velocity 为
+\[
+V_\tau^{\gamma}
+=
+X_1-X_0+\dot\gamma_\tau\varepsilon.
+\]
+在 Gaussian base 和
+\(\gamma_\tau^2=2\tau(1-\tau)\) 下，真实条件速度满足
+\[
+v_{\mathrm{data},\tau}^{\gamma}(x_\tau)
+=
+\frac{
+m_{\mathrm{data},\tau}(x_\tau)-\tau x_\tau
+}{
+1-\tau^2
+},
+\qquad
+m_{\mathrm{data},\tau}(x_\tau)
+=
+\E[X_1\mid X_\tau^{\gamma}=x_\tau].
+\]
+
+因此可训练
+\[
+\cL_{\mathrm{noisy}}(\theta)
+=
+\E
+\left[
+\left\|
+\frac{
+\widehat m_{\theta,K,\tau}(X_\tau^{\gamma})-\tau X_\tau^{\gamma}
+}{
+1-\tau^2
+}
+-V_\tau^{\gamma}
+\right\|_2^2
+\right].
+\]
+等价地，
+\[
+\cL_{\mathrm{noisy}}(\theta)
+=
+\frac{1}{(1-\tau^2)^2}
+\E
+\left[
+\left\|
+\widehat m_{\theta,K,\tau}(X_\tau^{\gamma})
+-
+\left\{
+\tau X_\tau^{\gamma}+(1-\tau^2)V_\tau^{\gamma}
+\right\}
+\right\|_2^2
+\right].
+\]
+其中随机目标
+\[
+T_\tau
+:=
+\tau X_\tau^{\gamma}+(1-\tau^2)V_\tau^{\gamma}
+\]
+满足
+\[
+\E[T_\tau\mid X_\tau^{\gamma}=x_\tau]
+=
+m_{\mathrm{data},\tau}(x_\tau).
+\]
+所以这一目标仍然是在学习 endpoint posterior mean，只是无噪声版本中的
+\(\E[X_1\mid X_\tau=x]\) 被替换为带噪声 bridge 下的
+\(\E[X_1\mid X_\tau^{\gamma}=x_\tau]\)。
+
+\section{Anchor 近似}
+
+后验密度满足
+\[
+p_\theta(u\mid x_\tau)
+\propto
+\pi(u)\,
+p_0
+\left(
+\frac{x_\tau-\tau h_\theta(u)}{1-\tau}
+\right).
+\]
+
+令
+\[
+h_k=h_\theta(u_k),
+\qquad
+x_{0,k}(x_\tau)
+=
+\frac{x_\tau-\tau h_k}{1-\tau}.
+\]
+importance weights 为
+\[
+\omega_k(x_\tau)
+=
+\pi(u_k)\,
+p_0(x_{0,k}(x_\tau)).
+\]
+
+于是
+\[
+m_{\theta,K,\tau}(x_\tau)
+=
+\sum_{k=1}^K w_kh_\theta(u_k),
+\]
+并且
+\[
+v_{\theta,K,\tau}(x_\tau)
+=
+\frac{
+\sum_{k=1}^K w_kh_\theta(u_k)-x_\tau
+}{1-\tau}.
+\]
+
+当
+\[
+p_0=\cN(0,I_D),\qquad q(u\mid x_\tau)=\pi(u),
+\]
+权重化简为
+\[
+w_k
+=
+\softmax_k
+\left(
+-
+\frac{
+\|x_\tau-\tau h_\theta(u_k)\|_2^2
+}{
+2(1-\tau)^2
+}
+\right).
+\]
+
+直觉是：哪个 \(u_k\) 让反推出的
+\[
+x_{0,k}
+=
+\frac{x_\tau-\tau h_\theta(u_k)}{1-\tau}
+\]
+更像 base distribution \(p_0\) 中的样本，哪个 anchor 的权重就更大。
+
+
+\section{重点设计一：Anchor proposal}
+
+最基础的选择是
+\[
+u_k\sim\pi(u).
+\]
+但当 \(\tau\) 接近 1 时，权重项
+\[
+\exp\left(
+-
+\frac{\|x_\tau-\tau h_\theta(u_k)\|^2}{2(1-\tau)^2}
+\right)
+\]
+非常尖锐，大多数 anchors 权重接近 0。
+
+因此需要设计更强的 proposal。建议重点考虑三类。
+
+\subsection{Amortized proposal}
+
+训练一个条件 proposal：
+\[
+q_\phi(u\mid x_\tau).
+\]
+采样：
+\[
+u_k\sim q_\phi(u\mid x_\tau),
+\]
+权重仍然使用 importance correction：
+\[
+w_k\propto
+\frac{
+\pi(u_k)p_0(x_{0,k})
+}{
+q_\phi(u_k\mid x_\tau)
+}.
+\]
+
+这可以用反向 KL 训练：
+\[
+\min_\phi
+\E_{x_\tau}
+\KL\left(
+q_\phi(u\mid x_\tau)
+\|p_\theta(u\mid x_\tau)
+\right),
+\]
+或者用 self-normalized importance sampling 的有效样本数作为辅助目标。
+
+\subsection{Mixture proposal}
+
+为了防止 learned proposal 漏掉 mode，可以使用混合 proposal：
+\[
+q(u\mid x_\tau)
+=
+\lambda\pi(u)
++
+(1-\lambda)q_\phi(u\mid x_\tau).
+\]
+
+prior 分量负责覆盖，learned proposal 负责精度。这个设计比纯 MAP-Laplace 更有研究空间，因为它可以处理多峰后验。
+
+\subsection{Retrieval anchors}
+
+维护一个 large codebook：
+\[
+\mathcal C=\{u_j,h_\theta(u_j)\}_{j=1}^M.
+\]
+给定 \(x_\tau\)，先检索使
+\[
+p_0\left(
+\frac{x_\tau-\tau h_\theta(u_j)}{1-\tau}
+\right)
+\]
+最大的 top-\(K\) anchors，再围绕它们做局部扰动。
+
+这条路线工程上最容易先做出结果，也便于做 ESS 和速度的 ablation。
+
+\section{重点设计二：\(\tau\) 选择}
+
+\(\tau\) 的作用类似 MAGT 中的 smoothing level。过小的 \(\tau\) 使 \(X_\tau\) 太接近 base，训练 endpoint 的信号弱；过大的 \(\tau\) 使后验过尖，anchors 容易塌缩。
+
+可以定义 effective sample size：
+\[
+\ESS(x_\tau)
+=
+\frac{1}{\sum_{k=1}^Kw_k(x_\tau)^2}.
+\]
+
+一个可设计的选择准则是：
+\[
+\tau^\star
+=
+\arg\min_{\tau\in\mathcal T}
+\widehat{\W}_2
+\left(
+\{h_{\theta_\tau}(u_j)\},
+\mathcal D_{\mathrm{val}}
+\right)
+\]
+并加上约束
+\[
+\E[\ESS(X_\tau)]\ge \rho K.
+\]
+
+也可以把 \(\tau\) 做成 adaptive：
+\[
+\tau=\tau(x)
+\]
+或采用少量层级
+\[
+\tau\in\{\tau_1,\dots,\tau_L\},
+\qquad L\ll 100.
+\]
+但如果目标是 one-step generation，建议第一版保持单一 \(\tau\)，把方法锋利地和 diffusion 区分开。
+
+\section{重点设计三：Base endpoint}
+
+若 \(X_0\sim\cN(0,I_D)\)，理论和实践都简单，但它是全维分布，可能削弱低维流形优势。
+
+一个更贴近 MAGT 的设计是让 base endpoint 也由低维 latent 生成：
+\[
+X_0=g_\psi(V),
+\qquad
+V\sim p_V,
+\qquad
+g_\psi:\R^{d_0}\to\R^D.
+\]
+于是
+\[
+X_\tau=(1-\tau)g_\psi(V)+\tau h_\theta(U).
+\]
+
+如果进一步让 \(V=U\) 或让 \(V\) 与 \(U\) 相关，可以得到 shared-latent bridge：
+\[
+X_\tau=(1-\tau)g_\psi(U)+\tau h_\theta(U).
+\]
+
+这可能带来两个好处：
+\begin{enumerate}
+\item 中间路径仍主要受低维结构控制，有机会保留 intrinsic-dimension rate；
+\item 条件后验从 \((X_0,U)\) 的全维搜索变成低维 latent 搜索，anchors 更高效。
+\end{enumerate}
+
+风险是 \(g_\psi\) 的引入会让模型更复杂，需要避免把问题变成另一个普通 autoencoder 或 GAN。
+
+\section{重点设计四：带噪声 bridge 的取舍}
+
+前面的具体推导说明，带噪声线性 bridge 并不只是给无噪声插值加一个扰动项。
+一般情况下，速度场同时依赖
+\[
+m_{\theta,\tau}(x_\tau)=\E[h_\theta(U)\mid X_{\theta,\tau}^{\gamma}=x_\tau],
+\qquad
+m_{\theta,\tau}^{0}(x_\tau)=\E[X_0\mid X_{\theta,\tau}^{\gamma}=x_\tau],
+\]
+以及 bridge score \(s_{\theta,\tau}^{\gamma}(x_\tau)\)。这意味着如果直接采用一般 \(p_0\)，
+anchors 可能需要在 \((x_0,u)\) 的 joint posterior 上工作。
+
+但在
+\[
+p_0=\cN(0,I_D),
+\qquad
+\gamma_\tau^2=2\tau(1-\tau)
+\]
+这个特殊而自然的设定下，可以把 \(X_0\) 积掉，得到低维 latent posterior：
+\[
+p_\theta(u\mid x_\tau)
+\propto
+\pi(u)
+\phi\left(x_\tau;\tau h_\theta(u),(1-\tau^2)I_D\right),
+\]
+并且速度场简化为
+\[
+v_{\theta,\tau}^{\gamma}(x_\tau)
+=
+\frac{m_{\theta,\tau}(x_\tau)-\tau x_\tau}{1-\tau^2}.
+\]
+
+因此带噪声版本有两个直接优势：
+\begin{enumerate}
+\item 权重分母从无噪声版本的 \((1-\tau)^2\) 变成 \(1-\tau^2\)，posterior anchors 在 \(\tau\to1\) 时更不容易完全塌缩；
+\item 它保留了 endpoint posterior mean 的核心解释，同时更接近 stochastic interpolants 的连续 bridge 视角。
+\end{enumerate}
+
+主要风险是理论证明更难：无噪声版本可以直接反推 \(X_0\)，而带噪声版本需要处理 score 项或线性高斯消元带来的额外误差。
+因此建议实验上优先比较无噪声 anchors 与 Gaussian-base noisy anchors，而理论上先证明后者的单层 conditional-mean 误差控制。
+
+\section{可形成的论文贡献}
+
+建议贡献写成以下三点。
+
+\begin{enumerate}[label=\textbf{C\arabic*.}]
+\item \textbf{Endpoint-posterior velocity matching.}
+提出一种由 one-step generator 诱导速度场的训练目标，将 velocity matching 转化为 endpoint posterior matching。
+
+\item \textbf{ESS-aware anchor approximation.}
+提出面向 endpoint posterior 的 anchor proposal 设计，包括 amortized proposal、mixture proposal 或 retrieval anchors，并用 ESS 控制后验权重塌缩。
+
+\item \textbf{Single-level velocity-to-generation analysis.}
+证明或部分证明固定层级 velocity error 可以控制 endpoint generation error，并分析何时保留 intrinsic-dimension 优势。
+\end{enumerate}
+
+如果理论进度不够，C3 可以先弱化为：
+\[
+\text{training objective decomposition + finite-anchor consistency + empirical validation}.
+\]
+
+\section{实验设计}
+
+实验应当围绕三个问题设计。
+
+\subsection{问题一：是否能一步生成}
+
+对比对象：
+\[
+\text{DDIM},\quad \text{flow matching},\quad \text{GAN},\quad \text{MAGT}.
+\]
+评价：
+\[
+W_2,\quad \text{FID},\quad \text{sampling time},\quad \text{NFE}.
+\]
+
+\subsection{问题二：是否更贴近流形}
+
+在 synthetic manifolds 上报告：
+\[
+W_2,\qquad \text{off-manifold rate},\qquad \text{nearest-manifold distance}.
+\]
+这部分可以复用 MAGT 的 rings、spiral、moons、checker、helix、torus。
+
+\subsection{问题三：anchor proposal 是否有效}
+
+必须做 ablation：
+\[
+\text{prior anchors}
+\quad
+\text{QMC anchors}
+\quad
+\text{retrieval anchors}
+\quad
+\text{amortized proposal}
+\quad
+\text{mixture proposal}.
+\]
+
+报告：
+\[
+\ESS,\quad
+\text{weight entropy},\quad
+\text{validation }W_2,\quad
+\text{training stability},\quad
+\text{wall-clock cost}.
+\]
+
+\section{最小可行版本}
+
+最小可行版本建议如下：
+\begin{enumerate}
+\item 使用无噪声线性插值：
+\[
+X_\tau=(1-\tau)X_0+\tau X_1.
+\]
+\item 使用 \(X_0\sim\cN(0,I_D)\) 和 latent anchors \(u_k\sim\pi\)。
+\item 训练目标：
+\[
+\min_\theta
+\E
+\left[
+\left\|
+\sum_{k=1}^K w_k(X_\tau)h_\theta(u_k)
+-
+X_1
+\right\|^2
+\right].
+\]
+\item 增加 ESS 监控：
+\[
+\ESS(X_\tau)=1/\sum_kw_k^2.
+\]
+\item 做 retrieval anchors 或 mixture proposal 作为主要改进。
+\end{enumerate}
+
+这个版本足够验证核心命题：\textbf{是否可以只通过 endpoint-posterior velocity matching 学出 one-step generator。}
+
+\section{推荐推进路线}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\linewidth}{p{0.16\linewidth}p{0.35\linewidth}Y}
+\toprule
+阶段 & 目标 & 产出 \\
+\midrule
+Stage 1 & 复现基础 endpoint-posterior loss & synthetic manifolds 上跑通 one-step generation \\
+Stage 2 & 加入 ESS-aware anchor proposal & 证明 ESS、稳定性、\(W_2\) 改善 \\
+Stage 3 & 与 MAGT / FM / DDIM 对比 & 形成主要实验表格 \\
+Stage 4 & 写理论分解 & velocity loss 正交分解、anchor consistency、初步 generalization bound \\
+Stage 5 & 攻 single-level velocity pull-back & 形成理论亮点或作为未来工作 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{总结}
+
+这条研究线最清晰的定位是：
+\[
+\boxed{
+\text{用 endpoint posterior 约束速度场，用一步 transport 完成生成。}
+}
+\]
+
+已有基础已经足够支撑方法雏形：MAGT 提供 one-step transport 和 anchors，stochastic interpolants 提供 velocity matching 语言，前面的推导给出 endpoint-posterior 等价式。
+
+真正需要重点设计的是：
+\begin{enumerate}
+\item anchor proposal，尤其是 ESS-aware 或 amortized proposal；
+\item \(\tau\) 选择机制；
+\item base endpoint 是否保持低维结构；
+\item 是否引入带噪声 bridge；
+\item single-level velocity pull-back 理论。
+\end{enumerate}
+
+其中最适合作为论文创新点的是：
+\begin{center}
+\fbox{
+\begin{minipage}{0.82\linewidth}
+\centering
+endpoint-posterior velocity matching\\
+\(+\) ESS-aware anchor proposal\\
+\(+\) single-level velocity analysis
+\end{minipage}
+}
+\end{center}
+
+\end{document}

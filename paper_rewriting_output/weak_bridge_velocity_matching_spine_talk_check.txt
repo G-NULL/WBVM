@@ -1,0 +1,1343 @@
+Weak Bridge Velocity Matching
+从点态条件速度估计到弱形式桥流量对齐
+
+2026 年 6 月 16 日
+
+1 已有方法简述：从 MAGT 到 E-PVM
+MAGT 的出发点是把生成问题压缩到一个固定插值层级上。给定真实数据端点
+X1 ∼ pdata ,
+以及一步生成器
+hθ : Rd → RD ,
+
+U ∼ π,
+
+xgen = hθ (U ),
+
+固定层级的平滑数据和模型平滑分布可以写成
+Yτd = ατ X1 + στ ε,
+
+Yθ,τ = ατ hθ (U ) + στ ε,
+
+ε ∼ N (0, ID ).
+
+因此 MAGT 类方法的核心可以理解为：在固定 τ 上学习一个低维到高维的 one-step transport，
+使模型诱导的平滑分布接近数据平滑分布。这个设计保留了一步生成
+u ∼ π,
+
+xgen = hθ (u),
+
+同时用固定层级的 denoising / score 信号降低直接匹配高维数据分布的难度。
+具体地，给定 anchors uk ∼ π̃(· | y)，MAGT 用自归一化重要性采样近似 posterior mean：
+ωk (y) ∝
+
+
+π(uk )
+ϕ y; ατ hθ (uk ), στ2 ID ,
+π̃(uk | y)
+m
+e θ,K,τ (y) =
+
+K
+X
+
+ωk (y)
+,
+wk (y) = PK
+ℓ=1 ωℓ (y)
+
+wk (y)hθ (uk ).
+
+k=1
+
+对应的 transport-based score estimator 为
+seθ,K,τ (y) =
+
+ατ m
+e θ,K,τ (y) − y
+.
+στ2
+
+对训练样本 xi1 ∼ pdata ，采样
+εi ∼ N (0, ID ).
+
+yτi = ατ xi1 + στ εi ,
+高斯条件 score 是
+
+scond (yτi , xi1 ) = ∇yτ log p(yτi | xi1 ) =
+1
+
+ατ xi1 − yτi
+.
+στ2
+
+1
+
+已有方法简述：从 MAGT 到 E-PVM
+
+2
+
+于是 MAGT 的固定层级 denoising score matching loss 为
+2
+
+ℓMAGT (yτi , xi1 ; θ) = seθ,K,τ (yτi ) − scond (yτi , xi1 ) 2 ,
+1X
+ℓMAGT (yτi , xi1 ; θ).
+n
+n
+
+(θ) =
+LMAGT
+n,K
+
+i=1
+
+等价地，由于两项中的 −yτi /στ2 抵消，
+ℓMAGT (yτi , xi1 ; θ) =
+
+ατ2
+2
+m
+e θ,K,τ (yτi ) − xi1 2 .
+στ4
+
+E-PVM 在这个基础上换成 velocity matching 语言。真实线性桥为
+Xτd = (1 − τ )X0 + τ X1 ,
+
+V d = X1 − X0 ,
+
+模型桥为
+Xθ,τ = (1 − τ )X0 + τ hθ (U ),
+
+V θ = hθ (U ) − X0 .
+
+模型不再学习自由速度网络，而是使用由生成端点诱导的 projected velocity：
+vθ,τ (xτ ) = Eθ [hθ (U ) − X0 | Xθ,τ = xτ ].
+E-PVM 的基本 velocity loss 是
+
+LE-PVM (θ) = E
+
+vθ,τ (Xτd ) − (X1 − X0 )
+
+2
+2
+
+
+.
+
+在线性无噪声插值下，给定 xτ 和 anchor u 可以反推出
+X0 =
+
+xτ − τ hθ (u)
+.
+1−τ
+
+于是令
+mθ,τ (xτ ) := Eθ [hθ (U ) | Xθ,τ = xτ ],
+就有
+vθ,τ (xτ ) =
+
+mθ,τ (xτ ) − xτ
+.
+1−τ
+
+因此 E-PVM loss 可写成 endpoint posterior mean 的形式：
+
+
+2
+1
+d
+E mθ,τ (Xτ ) − X1
+.
+LE-PVM (θ) =
+(1 − τ )2
+2
+这一步把问题集中到条件期望 mθ,τ 的近似上。WBVM 则进一步改换监督对象：不再估计点态
+条件速度，而是直接比较生成器诱导桥与数据桥的弱流量。
+
+2
+
+两条桥
+
+3
+
+2 两条桥
+真实数据桥为
+Xτd = (1 − τ )X0 + τ X1 ,
+
+V d = X1 − X0 .
+
+生成器诱导桥为
+Xθ,τ = (1 − τ )X0 + τ hθ (U ),
+
+V θ = hθ (U ) − X0 .
+
+其中 X0 ∼ p0 、X1 ∼ pdata 、U ∼ π。最终生成仍然是一步：
+u ∼ π,
+
+xgen = hθ (u).
+
+如果走点态速度路线，就会定义 Markovian projected velocities：
+vd,τ (x) = E[V d | Xτd = x],
+
+vθ,τ (x) = E[V θ | Xθ,τ = x].
+
+WBVM 刻意避开对 vθ,τ 的显式估计。
+
+3 弱连续性方程
+设 ρdτ = Law(Xτd )，ρθ,τ = Law(Xθ,τ )。形式上，概率流满足连续性方程
+∂τ ρτ + ∇ · (ρτ vτ ) = 0.
+对任意光滑测试函数 φ : RD → R，弱形式为
+d
+E[φ(Xτ )] = E[∇φ(Xτ )⊤ V ].
+dτ
+因此定义弱桥流量差异：
+∆θ (φ, τ ) = E[∇φ(Xθ,τ )⊤ V θ ] − E[∇φ(Xτd )⊤ V d ].
+主目标可以只保留弱桥流量差异。这里必须把测试函数大小固定住。否则由于 ∆θ (cφ, τ ) =
+c∆θ (φ, τ )，无约束的 supφ∈F |∆θ (φ, τ )|2 会退化成 0 或 ∞。因此令 (F, ∥ · ∥F ) 为带范数的测试
+函数空间，定义
+2
+Dflux
+(θ, τ ) =
+
+sup
+φ∈F , ∥φ∥F ≤1
+
+|∆θ (φ, τ )|2 .
+
+这等价于把 ∆θ (·, τ ) 看成 F 上的线性泛函，并取其对偶范数：
+Dflux (θ, τ ) = ∥∆θ (·, τ )∥F ∗ .
+理论上最干净的 all-time 目标是
+Lall
+WBVM (θ) =
+
+Z 1
+0
+
+下面所有目标都只保留 flux discrepancy。
+
+2
+Dflux
+(θ, τ ) dτ.
+
+4
+
+两种训练模式
+
+4
+
+4 两种训练模式
+模式一：all-time pure flux matching。 如果训练时对 τ ∼ Unif[0, 1] 采样，并且同一个 hθ
+被所有时间层级共享，那么随机训练目标就是在近似
+Z 1
+all
+2
+LWBVM (θ) =
+Dflux
+(θ, τ ) dτ.
+0
+
+在 population 层面，如果测试函数类足够丰富，并且
+∀τ ∈ [0, 1],
+
+2
+Dflux
+(θ, τ ) = 0,
+
+并且两条桥有相同初始分布，那么可以由连续性方程推出
+d
+
+hθ (U ) = X1 .
+这是 WBVM 最干净的理论版本。
+模式二：validation-selected single-level WBVM。 如果希望采用固定层级，则不要声称
+单个 τ 的 flux loss 本身足够识别 endpoint。更稳妥的做法是把 τ 当作候选桥层级：
+T = {τ1 , . . . , τm }.
+对每个 τ ∈ T 单独训练候选生成器
+2
+θ̂τ = arg min Dflux
+(θ, τ ).
+θ
+
+然后用验证集在 endpoint 上选层级：
+
+
+b val Ph (U ) , Pval .
+τ ⋆ = arg min D
+θ̂
+τ ∈T
+
+τ
+
+最终生成器为
+xgen = hθ̂ ⋆ (u),
+τ
+
+u ∼ π.
+
+这个版本的逻辑是：single-level flux loss 负责产生候选 hθ̂τ ，endpoint validation 负责选择最接
+近 X1 的候选。
+
+5
+
+三种实现路线总览
+
+路线
+
+核心对象
+
+优点
+
+风险
+
+RKHS 核方法
+
+闭式 weak flux
+
+无 neural critic，理论最
+
+O(B 2 )，带宽敏感，
+
+discrepancy
+
+干净
+
+kernel Hessian 噪声
+
+vector flux measure
+
+实现直接，可做 flux-only
+
+可能惩罚 divergence-free
+
+baseline
+
+的流量差异
+
+最接近 PDE 弱形式，可
+
+对抗训练和高阶自动微分
+
+扩展
+
+成本
+
+Vector-flux MMD
+Sobolev critic
+
+学习测试函数，近似
+H
+
+−1
+
+残差
+
+推荐推进顺序：
+RKHS derivative-kernel → vector-flux MMD → Sobolev neural critic
+
+6
+
+路线一：RKHS DERIVATIVE-KERNEL WBVM
+
+5
+
+6 路线一：RKHS Derivative-Kernel WBVM
+令 Hk 是标量 RKHS，核为 k(x, x′ )。由导数再生性质，
+∂i φ(x) = ⟨φ, ∂xi k(x, ·)⟩Hk .
+于是
+
+*
+⊤
+
+∇φ(x) v =
+
+D
+X
+
+φ,
+
++
+vi ∂xi k(x, ·)
+
+.
+Hk
+
+i=1
+
+定义 flux mean embedding：
+µflux
+θ,τ = E
+
+"D
+X
+
+#
+Viθ ∂xi k(Xθ,τ , ·) ,
+
+i=1
+
+µflux
+d,τ = E
+
+"D
+X
+
+#
+Vid ∂xi k(Xτd , ·) .
+
+i=1
+
+则
+
+D
+E
+flux
+∆θ (φ, τ ) = φ, µflux
+−
+µ
+θ,τ
+d,τ
+
+Hk
+
+.
+
+因此 RKHS 版本就是取
+F = Hk ,
+
+∥φ∥F = ∥φ∥Hk .
+
+在 RKHS 单位球上取上确界，得到闭式 discrepancy：
+2
+DRKHS-flux
+(θ, τ ) =
+
+sup
+∥φ∥Hk ≤1
+
+flux
+|∆θ (φ, τ )|2 = µflux
+θ,τ − µd,τ
+
+2
+Hk
+
+.
+
+flux
+这里的等号来自 Cauchy–Schwarz 和 Riesz 表示定理：µflux
+θ,τ − µd,τ 正是线性泛函 ∆θ (·, τ ) 在
+
+RKHS 中的 representer。
+经验估计时应显式区分模型桥样本量和数据桥样本量。记
+θ
+{(xθi , viθ )}ni=1
+,
+
+对 RBF 核
+
+
+
+∥x − x′ ∥2
+kσ (x, x ) = exp −
+2σ 2
+′
+
+有
+
+Hk (x, x′ ) = ∇x ∇x′ k(x, x′ ).
+
+d
+{(xdj , vjd )}nj=1
+,
+
+
+,
+
+
+(x − x′ )(x − x′ )⊤
+ID
+∇x ∇x′ kσ (x, x ) = kσ (x, x ) 2 −
+.
+σ
+σ4
+′
+
+′
+
+
+
+特别地，当 x = x′ 时，
+∥v∥2
+ID
+⊤
+,
+v
+H
+(x,
+x)v
+=
+.
+k
+σ
+σ2
+σ2
+所以同组对角项会把速度范数直接带入目标。为避免 loss 被 ∥v∥2 /σ 2 主导，经验估计直接采用
+Hkσ (x, x) =
+
+去掉同组对角项的 U-statistic：
+b2
+D
+RKHS-flux,U =
+
+1
+
+X
+
+nθ (nθ − 1)
+
+i̸=i′
+
++
+
+1
+nd (nd − 1)
+
+(viθ )⊤ Hk (xθi , xθi′ )viθ′
+
+X
+
+(vjd )⊤ Hk (xdj , xdj′ )vjd′
+
+j̸=j ′
+n
+n
+θ
+d
+2 XX θ ⊤
+−
+(vi ) Hk (xθi , xdj )vjd .
+nθ nd
+i=1 j=1
+
+6
+
+路线一：RKHS DERIVATIVE-KERNEL WBVM
+
+6
+
+这个修改只去掉模型–模型和数据–数据内部的 i = i′ 、j = j ′ 项；模型–数据交叉项不需要去对
+角，因为它们来自两组样本。
+当前模拟实现中的稳定化细节。
+
+上式的 U-statistic 是实际训练版本的核心，但有限 batch 下
+
+仍然容易出现速度范数捷径、星形射线和中心坍缩。当前实验版因此采用四个实现约束。
+第一，进入 RKHS flux loss 之前，对模型速度和数据速度分别做 batch RMS 归一化：
+Ve θ =
+
+Vθ
+p
+,
+sg
+Ebatch ∥V θ ∥2 + δ
+
+Ve d =
+
+Vd
+p
+.
+sg
+Ebatch ∥V d ∥2 + δ
+
+其中 sg(·) 表示 stop-gradient，实验中取 δ = 10−6 。训练时把 (V θ , V d ) 替换成 (Ve θ , Ve d )，从而
+减少 ∥v∥2 /σ 2 对目标的支配。
+第二，模型桥和数据桥共享同一个 base noise：
+Xθ,τ = (1 − τ )X0 + τ hθ (U ),
+
+Xτd = (1 − τ )X0 + τ X1 .
+
+这不会改变 population 目标，但在有限 batch 中把比较变成 paired bridge comparison，显著降
+低两组独立 base noise 带来的方差。
+第三，RBF 带宽不再由当前模型样本动态估计，而是只从真实数据桥
+Xτd = (1 − τ )X0 + τ X1
+预先估计 σ0 。训练使用多尺度核平均
+σ ∈ σ0 · {0.5, 1, 2, 4}.
+这样小带宽负责局部流形结构，大带宽负责全局错位，且 loss 尺度不再随生成器早期坏样本漂
+移。
+第四，all-time WBVM 不再使用端点附近过宽的 [0, 1] 或 [0.05, 0.95] 采样，而是采用
+τ ∼ Unif[0.35, 0.85].
+这个区间去掉了 base-noise 主导的小 τ 和 kernel Hessian 过尖的大 τ 。validation-selected singlelevel WBVM 仍使用候选集合
+T = {0.1, 0.2, . . . , 0.9},
+并在 endpoint validation 上选择最终候选。
+纯 flux 目标为
+2
+Lpure
+RKHS-WBVM = DRKHS-flux (θ, τ ).
+
+讲述时的重点是：这是最干净的 posterior-free 版本；它既有核二样本检验的统计解释，又
+直接对应弱形式流量差异。
+
+7
+
+路线二：VECTOR-FLUX MMD WBVM
+
+7
+
+路线二：Vector-Flux MMD WBVM
+
+7
+
+路线一的 RKHS-flux 是从弱连续性方程出发：
+∆θ (φ, τ ) = E[∇φ(Xθ,τ )⊤ V θ ] − E[∇φ(Xτd )⊤ V d ].
+也就是说，它只用形如
+g(x) = ∇φ(x)
+的测试向量场去观察流量差异。路线二换一个更直接的角度：不先取散度，也不限制测试向量
+场必须是某个标量函数的梯度，而是直接把
+ρ(x)v(x)
+看作一个向量值测度，并在向量值 RKHS 中做 MMD。
+具体地，定义两条桥在层级 τ 的 vector flux measure：
+Fθ,τ = ρθ,τ (x)vθ,τ (x),
+
+Fd,τ = ρdτ (x)vd,τ (x).
+
+在采样形式下，它们分别由
+(Xθ,τ , V θ ),
+
+(Xτd , V d )
+
+给出，其中
+Xθ,τ = (1 − τ )X0 + τ hθ (U ),
+Xτd = (1 − τ )X0 + τ X1 ,
+
+V θ = hθ (U ) − X0 ,
+V d = X1 − X0 .
+
+如果采用速度归一化版本，则把上式中的 V θ , V d 替换为 Ve θ , Ve d 。这时目标应理解为 normalized
+flux discrepancy，而不是原始物理速度的精确 flux。
+取一个标量核 k，构造矩阵值核
+K(x, x′ ) = k(x, x′ )ID
+及其向量值 RKHS
+HK ≃ HkD .
+路线二的目标可以写成一个向量测试函数的 dual norm：
+DvMMD (θ, τ ) =
+
+sup
+∥g∥HK ≤1
+
+E[g(Xθ,τ )⊤ V θ ] − E[g(Xτd )⊤ V d ] .
+
+由 RKHS 的 reproducing property，这个 supremum 等价于两个 vector flux mean embeddings
+的距离：
+2
+DvMMD
+(θ, τ ) = E[k(Xθ,τ , ·)V θ ] − E[k(Xτd , ·)V d ]
+
+因此 population 闭式为
+2
+′
+DvMMD
+= E[(V θ )⊤ V θ′ k(Xθ,τ , Xθ,τ
+)]
+
++ E[(V d )⊤ V d′ k(Xτd , Xτd′ )]
+− 2E[(V θ )⊤ V d k(Xθ,τ , Xτd )].
+
+2
+HK
+
+.
+
+7
+
+路线二：VECTOR-FLUX MMD WBVM
+
+8
+
+mini-batch 训练时，记模型桥样本为
+θ
+{(xθi , viθ )}ni=1
+,
+
+数据桥样本为
+d
+{(xdj , vjd )}nj=1
+.
+
+为了避免同组对角项
+k(xi , xi )∥vi ∥2
+再次让速度范数主导 loss，经验估计建议使用 U-statistic：
+b2
+D
+vMMD,U =
+
+1
+
+X
+
+nθ (nθ − 1)
+
+i̸=i′
+
++
+
+1
+
+(viθ )⊤ viθ′ k(xθi , xθi′ )
+
+X
+
+nd (nd − 1)
+
+(vjd )⊤ vjd′ k(xdj , xdj′ )
+
+j̸=j ′
+n
+n
+θ
+d
+2 XX θ ⊤ d
+−
+(vi ) vj k(xθi , xdj ).
+nθ nd
+i=1 j=1
+
+和路线一一样，数据–数据项不依赖 θ，训练生成器时可以从反向传播图中去掉；但记录完整
+b2
+D
+作为 held-out diagnostic 更清楚。
+vMMD,U
+
+对应的训练目标为
+2
+LvMMD-WBVM = DvMMD
+(θ, τ ).
+
+这条路线和路线一的关系可以用一句话概括：
+路线一匹配∇φ 能看到的 flux；路线二匹配所有 RKHS vector field 能看到的 flux。
+因此路线二通常是一个更强的条件。如果 k 对有限 signed measure 足够 characteristic，
+DvMMD (θ, τ ) = 0
+会推出向量值测度意义下的
+Fθ,τ = Fd,τ .
+这当然会推出两者散度相同；但连续性方程真正需要的只是
+∇ · Fθ,τ = ∇ · Fd,τ .
+所以路线二可能会额外惩罚一些
+∇ · (Fθ,τ − Fd,τ ) = 0
+但 Fθ,τ ̸= Fd,τ 的 divergence-free circulation 差异。这是它理论上比路线一更强、也更不精确贴
+合 PDE 弱形式的地方。
+不过它有三个实际优点。第一，实现只需要普通 kernel Gram matrix 和速度内积，不需要
+计算
+∇x ∇x′ k(x, x′ )
+
+8
+
+路线三：SOBOLEV NEURAL-CRITIC WBVM
+
+9
+
+这样的 Hessian kernel。第二，它很适合作为 flux-only baseline，因为可以直接检查“位置相近
+且方向相近”的流量是否被对齐。第三，它很自然地扩展到 feature space。若使用一个特征映射
+Z = ψ(X),
+则 feature-space flux 速度可以写成
+Ż = Jψ (X)V,
+于是只需把
+(x, v)
+替换为
+(ψ(x), Jψ (x)v)
+再计算同一个 vector MMD。实际实现中，如果不想显式形成 Jacobian，也可以用有限差分近
+似
+Jψ (X)V ≈
+
+ψ(X + ϵV ) − ψ(X)
+.
+ϵ
+
+这给图像实验一个很清楚的升级方向：生成器仍然可以在 pixel 或 latent 中输出，但 flux discrepancy 在 LeNet、MAE 或其他语义特征空间中计算。
+因此路线二适合承担一个偏工程和实验的角色：它不是最贴近连续性方程理论的版本，但
+它是最容易稳定实现、最容易搬到 feature space、也最适合快速验证“弱桥流量对齐是否真的
+给 endpoint 生成带来收益”的版本。
+
+8 路线三：Sobolev Neural-Critic WBVM
+Sobolev 版本直接保留弱形式，并学习测试函数。严格的 dual-norm 写法是先固定一个
+Sobolev 单位球，例如
+2
+DSob-flux
+(θ, τ ) =
+
+sup
+∥φ∥Sob ≤1
+
+|∆θ (φ, τ )|2 .
+
+实际训练中，更常用的是等价的正则化 critic 形式：
+
+2
+DSob-flux
+(θ, τ ) = sup 2∆θ (φ, τ ) − Eρ̄τ ∥∇φ(X)∥2 − ϵEρ̄τ |φ(X)|2 ,
+φ
+
+其中
+1
+1
+ρ̄τ = ρθ,τ + ρdτ .
+2
+2
+这里的梯度惩罚和 ϵ-项正是在控制 critic 的 Sobolev 大小，避免无约束放大 φ 导致目标发散。
+用神经网络 φη 实现时，critic 更新为
+
+
+max 2∆θ (φη , τ ) − Eρ̄τ ∥∇φη (X)∥2 − ϵEρ̄τ |φη (X)|2 .
+η
+
+生成器更新为
+2
+min DSob-flux
+(θ, τ ).
+θ
+
+9
+
+理论命题
+
+10
+
+这个目标近似一个 H −1 型连续性方程残差：
+DSob-flux (θ, τ ) ≈ ∥∇ · (Fθ,τ − Fd,τ )∥H −1 (ρ̄τ ) .
+形式上，最优 critic 满足椭圆型弱问题：
+−∇ · (ρ̄τ ∇φ⋆ ) + ϵρ̄τ φ⋆ = −∇ · (Fθ,τ − Fd,τ ).
+Sobolev critic 是最接近 PDE 理论的版本，但也是训练最难的版本。实际推进时可以加入
+速度归一化：
+Vθ ←
+
+Vθ
+p
+,
+sg( E∥V θ ∥2 + δ)
+
+Vd ←
+
+Vd
+p
+.
+sg( E∥V d ∥2 + δ)
+
+9 理论命题
+命题一：all-time pure flux 的总体可识别性。
+d
+
+假设两条桥有相同初始分布：
+d
+
+Xθ,0 = X0 = X0d .
+如果对所有 τ ∈ [0, 1] 和所有 φ ∈ Cc∞ (RD )，
+E[∇φ(Xθ,τ )⊤ V θ ] = E[∇φ(Xτd )⊤ V d ],
+且对应连续性方程的弱解唯一，则
+∀τ ∈ [0, 1].
+
+ρθ,τ = ρdτ ,
+特别地，
+
+d
+
+hθ (U ) = Xθ,1 = X1 .
+这说明：如果所有时间层级的弱桥流量差异都为零，那么只保留 flux 项也足够推出 endpoint
+distribution 一致。
+命题二：负 Sobolev 稳定性。
+
+对于合适的 Sobolev critic class，
+
+Dflux (θ, τ ) ≈ ∇ · (ρθ,τ vθ,τ − ρdτ vd,τ )
+
+H −1 (ρ̄τ )
+
+.
+
+因此一个 all-time bound 应该类似于
+dH (ρθ,1 , ρd1 ) ≤ C
+命题三：固定层级 pure flux 的限制。
+
+Z 1
+Dflux (θ, τ ) dτ.
+0
+
+单个固定 τ0 的弱残差一般不能唯一确定 endpoint
+
+distribution。它最多约束
+∂τ (ρθ,τ − ρdτ ) τ =τ0 ,
+不能推出
+ρθ,τ0 = ρdτ0 ,
+
+ρθ,1 = ρd1 .
+
+因此 fixed-level WBVM 的理论表述应当是候选生成器训练，而不是完整可识别性定理。
+
+10 实验路线
+
+11
+
+命题四：候选验证选择的 oracle bound。 令 T 是有限候选集合，并对每个 τ ∈ T 得到候选
+模型
+2
+θ̂τ = arg min Dflux
+(θ, τ ).
+θ
+
+设真实 endpoint 距离为
+
+
+
+D(τ ) = D Phθ̂ (U ) , PX1 ,
+τ
+
+b val (τ )。如果有一致收敛
+验证估计为 D
+b val (τ ) − D(τ ) ≤ ϵval ,
+sup D
+
+τ ∈T
+
+并且
+b val (τ ),
+τ ⋆ = arg min D
+τ ∈T
+
+则
+D(τ ⋆ ) ≤ min D(τ ) + 2ϵval .
+τ ∈T
+
+典型有限候选集合下，
+
+s
+ϵval = O 
+
+
+log |T | 
+nval
+
+再加上生成样本的 Monte Carlo 误差。若候选集合中存在一个好层级 τ̄ ，使
+D(τ̄ ) ≈ 0,
+则验证选择出的 hθ̂ ⋆ (U ) 在 D 意义下接近 X1 。
+τ
+
+10 实验路线
+第一阶段：合成数据。 用 2D moons、spiral、checkerboard，以及嵌入 D = 50 或 D = 100 的
+helix / torus。核心目标不是刷新图像指标，而是验证：
+weak flux signal 是否能稳定推动一步生成器学习。
+第二阶段：all-time pure flux。 训练同一个 hθ ，每个 batch 随机采样
+τ ∼ Unif[0.35, 0.85],
+最小化
+1
+Lball
+WBVM ≈
+B
+
+B
+X
+
+b2
+D
+RKHS-flux,U (θ, τb ).
+
+b=1
+
+训练中使用共享 X0 、velocity RMS normalization 和固定多尺度 RBF 带宽；评估 endpoint W2 、
+sliced W2 ，以及 held-out weak flux residual。这个实验对应 all-time theory 的数值稳定版本。
+
+10 实验路线
+
+12
+
+第三阶段：validation-selected single-level。 选候选集合
+T = {0.1, 0.2, . . . , 0.9}.
+分别训练
+b2
+θ̂τ = arg min D
+RKHS-flux,U (θ, τ ),
+
+τ ∈T.
+
+θ
+
+每个候选训练 4000 steps。公共网络设置与 flow matching 基线保持一致：5 层 ReLU MLP、
+width 512、AdamW 优化器和相同训练步数尺度。然后用验证集 endpoint metric 选择
+
+
+b val Ph (U ) , Pval .
+τ ⋆ = arg min D
+θ̂
+报告
+
+τ ∈T
+
+τ
+
+
+Dtest Phθ̂
+
+(U ) , Ptest
+
+
+τ⋆
+
+以及 oracle gap
+Dtest (τ ⋆ ) − min Dtest (τ ).
+τ ∈T
+
+这个实验对应候选验证选择理论，而不是单点 flux 可识别性理论。
+
+10.1 当前 RKHS-WBVM 模拟结果
+最新一版实验使用六个 Section 6.1 风格 toy 数据集：rings2d、spiral2d、moons2d、checker2d、
+helix3d 和 torus3d。WBVM 的 latent dimension 设为 ambient dimension D；WBVM-all 使用
+τ ∼ Unif[0.35, 0.85]，WBVM-single 使用 T = {0.1, . . . , 0.9} 并由 validation endpoint sliced W2
+选层级。Flow matching 基线使用同样的 MLP backbone，加 32 维时间嵌入，采样 NFE=20。
+所有方法均生成 10000 个样本用于表格评估。
+从表格看，validation-selected WBVM-single 在六个 toy 数据集上的 sliced W2 均低于 flow
+matching；WBVM-all 在 moons、checker、helix 和 torus 上也低于 flow matching。不过视觉
+结果仍显示 rings 偏实心环盘、torus 偏体积云，spiral/checker/helix 中仍有少量射线结构。因
+此当前结论应表述为：U-statistic、velocity normalization、common X0 和多尺度带宽显著改善
+了有限样本稳定性，但 pure weak flux 仍可能需要 endpoint/marginal stabilization 才能完全消
+除 off-manifold 伪解。
+第四阶段：对比不同 critic。
+
+比较
+
+DRKHS-flux,U ,
+
+DvMMD ,
+
+DSob-flux .
+
+关键观察：不同 flux discrepancy 对 endpoint W2 、sliced W2 、held-out weak residual 的影响。
+第五阶段：和 E-PVM 互补。 在 anchors 容易塌缩的设定下比较 E-PVM 和 WBVM。预期
+叙事是：
+E-PVM sharper when posterior estimation is accurate;
+WBVM more robust when posterior estimation is unreliable.
+
+10 实验路线
+
+13
+
+图 1: RKHS-WBVM 稳定化版本在六个 toy 数据集上的生成结果。列依次为 ground truth、
+WBVM-all、validation-selected WBVM-single 和 flow matching。
+
+10 实验路线
+
+14
+
+表 1: Table 1-style synthetic metrics after RKHS-WBVM stabilization. WBVM uses U-statistic
+flux loss, velocity RMS normalization, common base noise and fixed multi-scale RBF bandwidths.
+Dataset
+
+Method
+
+τ / range
+
+NFE
+
+W2
+
+Sliced W2
+
+% out
+
+Time/10k (s)
+
+rings2d
+
+WBVM-all
+
+[0.35,0.85]
+
+1
+
+0.2909
+
+0.0567
+
+34.58
+
+0.0005
+
+rings2d
+
+WBVM-single
+
+0.80
+
+1
+
+0.2873
+
+0.0385
+
+33.65
+
+0.0004
+
+rings2d
+
+Flow matching
+
+[0.05,0.95]
+
+20
+
+0.2781
+
+0.0411
+
+23.53
+
+0.0110
+
+spiral2d
+
+WBVM-all
+
+[0.35,0.85]
+
+1
+
+0.2754
+
+0.0695
+
+51.48
+
+0.0005
+
+spiral2d
+
+WBVM-single
+
+0.90
+
+1
+
+0.2546
+
+0.0348
+
+19.66
+
+0.0004
+
+spiral2d
+
+Flow matching
+
+[0.05,0.95]
+
+20
+
+0.2535
+
+0.0427
+
+29.81
+
+0.0109
+
+moons2d
+
+WBVM-all
+
+[0.35,0.85]
+
+1
+
+0.2286
+
+0.0510
+
+14.70
+
+0.0005
+
+moons2d
+
+WBVM-single
+
+0.90
+
+1
+
+0.2394
+
+0.0371
+
+8.37
+
+0.0004
+
+moons2d
+
+Flow matching
+
+[0.05,0.95]
+
+20
+
+0.2361
+
+0.0666
+
+32.45
+
+0.0109
+
+checker2d
+
+WBVM-all
+
+[0.35,0.85]
+
+1
+
+0.2153
+
+0.0290
+
+6.09
+
+0.0005
+
+checker2d
+
+WBVM-single
+
+0.80
+
+1
+
+0.2498
+
+0.0219
+
+6.02
+
+0.0004
+
+checker2d
+
+Flow matching
+
+[0.05,0.95]
+
+20
+
+0.2247
+
+0.0394
+
+0.71
+
+0.0109
+
+helix3d
+
+WBVM-all
+
+[0.35,0.85]
+
+1
+
+0.2958
+
+0.0332
+
+5.82
+
+0.0005
+
+helix3d
+
+WBVM-single
+
+0.70
+
+1
+
+0.3013
+
+0.0343
+
+4.78
+
+0.0004
+
+helix3d
+
+Flow matching
+
+[0.05,0.95]
+
+20
+
+0.3299
+
+0.0497
+
+39.61
+
+0.0109
+
+torus3d
+
+WBVM-all
+
+[0.35,0.85]
+
+1
+
+0.3710
+
+0.0334
+
+29.64
+
+0.0004
+
+torus3d
+
+WBVM-single
+
+0.90
+
+1
+
+0.3616
+
+0.0286
+
+30.64
+
+0.0004
+
+torus3d
+
+Flow matching
+
+[0.05,0.95]
+
+20
+
+0.3519
+
+0.0525
+
+18.61
+
+0.0109
+
+11 参考文献与链接
+
+15
+
+11 参考文献与链接
+• Lipman et al., Flow Matching for Generative Modeling, 2022.
+• Albergo, Boﬀi, Vanden-Eijnden, Stochastic Interpolants: A Unifying Framework for Flows
+and Diffusions, 2023.
+• Gretton et al., A Kernel Method for the Two-Sample Problem, 2008 / JMLR version.
+• Li et al., MMD GAN: Towards Deeper Understanding of Moment Matching Network, 2017.
+• Mroueh et al., Sobolev GAN, 2017.
+
+

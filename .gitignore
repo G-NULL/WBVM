@@ -1,0 +1,59 @@
+# Python/runtime
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Local secrets and machine-specific config
+.env
+.env.*
+!.env.example
+.agents/
+.codex/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Datasets, model weights, caches
+**/data/
+**/weights_cache/
+**/model_cache/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.npy
+*.npz
+*.pkl
+
+# Experiment outputs and remote run state
+output/
+outputs*/
+**/outputs*/
+tmp/
+*.pid
+*.exit
+*.log
+
+# LaTeX/build products
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.out
+*.synctex.gz
+*.toc
+
+# Large downloaded/generated artifacts
+*.pdf
+*.tar
+*.gz
+
+# Third-party reference checkouts
+external_references/

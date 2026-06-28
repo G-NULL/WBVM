@@ -1,0 +1,450 @@
+\documentclass[UTF8,11pt]{ctexart}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{booktabs}
+\usepackage[hidelinks]{hyperref}
+
+\title{固定层级随机插值速度场的一步生成推导}
+\author{}
+\date{\today}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\calN}{\mathcal{N}}
+\newcommand{\dd}{\,\mathrm{d}}
+
+\begin{document}
+
+\maketitle
+
+\section{一般形式}
+
+随机插值的一般形式可以写为
+\begin{equation}
+I_\tau
+=
+a_\tau X_0
++
+b_\tau X_1
++
+\gamma_\tau \varepsilon,
+\qquad
+\varepsilon \sim \calN(0,I_D),
+\qquad
+\tau\in(0,1).
+\end{equation}
+
+其中 \(X_0\sim p_0\) 是 base endpoint，\(X_1\sim p_{\mathrm{data}}\) 是数据 endpoint。
+速度场学习的目标不是 score，而是条件平均速度：
+\begin{equation}
+v_\tau(y)
+=
+\E
+\left[
+\dot a_\tau X_0
++
+\dot b_\tau X_1
++
+\dot \gamma_\tau \varepsilon
+\mid
+I_\tau=y
+\right].
+\end{equation}
+
+如果希望最终做一步生成，引入非可逆低维传输映射
+\begin{equation}
+X_1^\theta=h_\theta(U),
+\qquad
+U\sim \pi,
+\qquad
+h_\theta:\R^d\to\R^D,
+\end{equation}
+采样时直接输出
+\begin{equation}
+x_{\mathrm{gen}}=h_\theta(u),
+\qquad
+u\sim\pi.
+\end{equation}
+
+\section{情况一：无噪声线性插值}
+
+取
+\begin{equation}
+a_\tau = 1-\tau,
+\qquad
+b_\tau = \tau,
+\qquad
+\gamma_\tau = 0.
+\end{equation}
+于是
+\begin{equation}
+X_\tau
+=
+(1-\tau)X_0+\tau X_1.
+\end{equation}
+
+因此 真实速度场是
+\begin{equation}
+\dot X_\tau
+=
+X_1-X_0.
+\end{equation}
+
+
+一步生成器诱导的插值为
+\begin{equation}
+X_{\theta,\tau}
+=
+(1-\tau)X_0+\tau h_\theta(U).
+\end{equation}
+模型速度场为
+\begin{equation}
+   \begin{aligned}
+    v_{\mathrm{data},\tau}(x_\tau)&=\E\left[h_\theta(U)-X_0\mid X_\tau=x_\tau\right]\\
+    &=\E\left[h_\theta(U)-\frac{X_\tau-\tau h_\theta(U)}{1-\tau}\mid X_\tau=x_\tau\right]\\
+    &=\frac{1}{1-\tau}\E\left[h_\theta(U)\mid X_\tau=x_\tau\right]-\frac{1}{1-\tau}x_\tau.
+   \end{aligned}
+\end{equation}
+
+对应的 velocity matching 目标可写为
+\begin{equation}
+\mathcal{L}_{\mathrm{lin}}(\theta)
+=
+\E
+\left[
+\left\|
+v_{\theta,\tau}(I_\tau)
+-
+(X_1-X_0)
+\right\|_2^2
+\right].
+\end{equation}
+
+\subsection{Anchor 近似}
+
+由于 \(\gamma_\tau=0\)，条件分布是退化的，并不会自然产生 Gaussian likelihood 权重。
+工程上可以加入一个很小的 kernel bandwidth \(\eta>0\)，用核平滑近似条件分布。
+给定 anchors \((u_k)_{k=1}^K\)，定义
+\begin{equation}
+z_k
+=
+-
+\frac{
+\left\|
+y-(1-\tau)x_{0,k}-\tau h_\theta(u_k)
+\right\|_2^2
+}{
+2\eta^2
+},
+\end{equation}
+\begin{equation}
+w_k
+=
+\frac{\exp(z_k)}
+{\sum_{j=1}^K\exp(z_j)}.
+\end{equation}
+于是
+\begin{equation}
+v_{\theta,K,\tau}(y)
+=
+\sum_{k=1}^{K}
+w_k
+\left[
+h_\theta(u_k)-x_{0,k}
+\right].
+\end{equation}
+
+这个无噪声版本非常接近 rectified flow 或 flow matching，但若要使用 MAGT-style anchor 推导，通常需要额外的核平滑或显式速度网络。
+
+\section{情况二：线性插值加中间随机扰动}
+
+取
+\begin{equation}
+a_\tau=1-\tau,
+\qquad
+b_\tau=\tau,
+\qquad
+\gamma_\tau=\sqrt{2\tau(1-\tau)}.
+\end{equation}
+于是
+\begin{equation}
+I_\tau
+=
+(1-\tau)X_0
++
+\tau X_1
++
+\sqrt{2\tau(1-\tau)}\,\varepsilon.
+\end{equation}
+
+记
+\begin{equation}
+\gamma_\tau=\sqrt{2\tau(1-\tau)}.
+\end{equation}
+则
+\begin{equation}
+\dot a_\tau=-1,
+\qquad
+\dot b_\tau=1,
+\qquad
+\dot\gamma_\tau
+=
+\frac{1-2\tau}
+{\sqrt{2\tau(1-\tau)}}.
+\end{equation}
+
+因此 sample-wise velocity 为
+\begin{equation}
+\dot I_\tau
+=
+X_1-X_0
++
+\frac{1-2\tau}
+{\sqrt{2\tau(1-\tau)}}\varepsilon.
+\end{equation}
+
+真实速度场为
+\begin{equation}
+v_{\mathrm{data},\tau}(y)
+=
+\E
+\left[
+X_1-X_0
++
+\frac{1-2\tau}
+{\sqrt{2\tau(1-\tau)}}\varepsilon
+\mid
+I_\tau=y
+\right].
+\end{equation}
+
+由
+\begin{equation}
+\varepsilon
+=
+\frac{
+y-(1-\tau)X_0-\tau X_1
+}{
+\sqrt{2\tau(1-\tau)}
+},
+\end{equation}
+代入可得
+\begin{equation}
+\dot I_\tau
+=
+X_1-X_0
++
+\frac{1-2\tau}
+{2\tau(1-\tau)}
+\left[
+y-(1-\tau)X_0-\tau X_1
+\right].
+\end{equation}
+
+整理后得到
+\begin{equation}
+\dot I_\tau
+=
+\frac{1-2\tau}
+{2\tau(1-\tau)}y
+-
+\frac{1}{2\tau}X_0
++
+\frac{1}{2(1-\tau)}X_1.
+\end{equation}
+
+因此真实速度场也可写为
+\begin{equation}
+v_{\mathrm{data},\tau}(y)
+=
+\frac{1-2\tau}
+{2\tau(1-\tau)}y
+-
+\frac{1}{2\tau}
+\E[X_0\mid I_\tau=y]
++
+\frac{1}{2(1-\tau)}
+\E[X_1\mid I_\tau=y].
+\end{equation}
+
+\section{一步生成器诱导的速度场}
+
+令
+\begin{equation}
+X_1^\theta=h_\theta(U),
+\qquad
+U\sim \pi.
+\end{equation}
+模型插值为
+\begin{equation}
+I_{\theta,\tau}
+=
+(1-\tau)X_0
++
+\tau h_\theta(U)
++
+\sqrt{2\tau(1-\tau)}\,\varepsilon.
+\end{equation}
+
+模型速度场为
+\begin{equation}
+v_{\theta,\tau}(y)
+=
+\E
+\left[
+h_\theta(U)-X_0
++
+\dot\gamma_\tau\varepsilon
+\mid
+I_{\theta,\tau}=y
+\right].
+\end{equation}
+
+\subsection{Anchor 权重}
+
+用 anchors \((x_{0,k},u_k)_{k=1}^K\) 近似条件期望，记
+\begin{equation}
+h_k=h_\theta(u_k).
+\end{equation}
+因为噪声方差为 \(\gamma_\tau^2=2\tau(1-\tau)\)，Gaussian likelihood 对应的 log-weight 为
+\begin{equation}
+z_k
+=
+-
+\frac{
+\left\|
+y-(1-\tau)x_{0,k}-\tau h_k
+\right\|_2^2
+}{
+4\tau(1-\tau)
+}
++
+\log p_0(x_{0,k})
++
+\log \pi(u_k)
+-
+\log q(x_{0,k},u_k\mid y).
+\end{equation}
+归一化权重为
+\begin{equation}
+w_k
+=
+\frac{\exp(z_k)}
+{\sum_{j=1}^{K}\exp(z_j)}.
+\end{equation}
+
+对每个 anchor，有
+\begin{equation}
+\varepsilon_k(y)
+=
+\frac{
+y-(1-\tau)x_{0,k}-\tau h_k
+}{
+\sqrt{2\tau(1-\tau)}
+}.
+\end{equation}
+
+于是模型速度场近似为
+\begin{equation}
+v_{\theta,K,\tau}(y)
+=
+\sum_{k=1}^{K}
+w_k
+\left[
+h_k-x_{0,k}
++
+\frac{1-2\tau}
+{\sqrt{2\tau(1-\tau)}}
+\varepsilon_k(y)
+\right].
+\end{equation}
+
+也可以整理成更紧凑的形式：
+\begin{equation}
+v_{\theta,K,\tau}(y)
+=
+\frac{1-2\tau}
+{2\tau(1-\tau)}y
++
+\sum_{k=1}^{K}
+w_k
+\left[
+-
+\frac{1}{2\tau}x_{0,k}
++
+\frac{1}{2(1-\tau)}h_k
+\right].
+\end{equation}
+
+\section{训练目标}
+
+带中间随机扰动时，真实 sample-wise target 为
+\begin{equation}
+v_{\mathrm{target}}
+=
+X_1-X_0
++
+\frac{1-2\tau}
+{\sqrt{2\tau(1-\tau)}}\varepsilon.
+\end{equation}
+
+等价地，也可以写为
+\begin{equation}
+v_{\mathrm{target}}
+=
+\frac{1-2\tau}
+{2\tau(1-\tau)}I_\tau
+-
+\frac{1}{2\tau}X_0
++
+\frac{1}{2(1-\tau)}X_1.
+\end{equation}
+
+因此训练目标为
+\begin{equation}
+\mathcal{L}_{\mathrm{SI}}(\theta)
+=
+\E
+\left[
+\left\|
+v_{\theta,K,\tau}(I_\tau)
+-
+v_{\mathrm{target}}
+\right\|_2^2
+\right].
+\end{equation}
+
+其中
+\begin{equation}
+I_\tau
+=
+(1-\tau)X_0
++
+\tau X_1
++
+\sqrt{2\tau(1-\tau)}\,\varepsilon.
+\end{equation}
+
+\section{实现备注}
+
+无噪声线性插值
+\[
+I_\tau=(1-\tau)X_0+\tau X_1
+\]
+形式简单，但条件分布退化；若想使用 anchor posterior 的权重形式，需要人为加入 kernel smoothing。
+
+带随机扰动的插值
+\[
+I_\tau=(1-\tau)X_0+\tau X_1+\sqrt{2\tau(1-\tau)}\,\varepsilon
+\]
+更适合 MAGT-style 推导，因为它自然给出 Gaussian likelihood 权重，并可通过 anchors 近似条件速度场。
+
+最终的一步生成仍然不需要积分速度场，而是直接使用
+\begin{equation}
+x_{\mathrm{gen}}=h_\theta(u),
+\qquad
+u\sim\pi.
+\end{equation}
+
+\end{document}
