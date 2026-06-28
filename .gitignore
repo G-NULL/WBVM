@@ -39,6 +39,7 @@ tmp/
 *.pid
 *.exit
 *.log
+**/run_outputs_*.sh
 
 # LaTeX/build products
 *.aux

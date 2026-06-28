@@ -1865,15 +1865,23 @@ def compute_inception_fid_for_sampler(
     return float(fid.compute().detach().cpu())
 
 
+def sqrtm_compat(matrix: np.ndarray) -> np.ndarray:
+    try:
+        result = linalg.sqrtm(matrix, disp=False)
+    except TypeError:
+        result = linalg.sqrtm(matrix)
+    return result[0] if isinstance(result, tuple) else result
+
+
 def frechet_distance_np(real: np.ndarray, fake: np.ndarray) -> float:
     mu_r = real.mean(axis=0)
     mu_f = fake.mean(axis=0)
     cov_r = np.cov(real, rowvar=False)
     cov_f = np.cov(fake, rowvar=False)
     eps = 1e-6
-    covmean, _ = linalg.sqrtm((cov_r + eps * np.eye(cov_r.shape[0])) @ (cov_f + eps * np.eye(cov_f.shape[0])), disp=False)
+    covmean = sqrtm_compat((cov_r + eps * np.eye(cov_r.shape[0])) @ (cov_f + eps * np.eye(cov_f.shape[0])))
     if not np.isfinite(covmean).all():
-        covmean, _ = linalg.sqrtm((cov_r + 1e-4 * np.eye(cov_r.shape[0])) @ (cov_f + 1e-4 * np.eye(cov_f.shape[0])), disp=False)
+        covmean = sqrtm_compat((cov_r + 1e-4 * np.eye(cov_r.shape[0])) @ (cov_f + 1e-4 * np.eye(cov_f.shape[0])))
     if np.iscomplexobj(covmean):
         covmean = covmean.real
     diff = mu_r - mu_f
