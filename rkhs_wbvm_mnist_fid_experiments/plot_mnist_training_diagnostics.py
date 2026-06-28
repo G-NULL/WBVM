@@ -260,21 +260,87 @@ def plot_tau_selection(
     for row in rows:
         tau = as_float(row.get("tau"))
         score = as_float(row.get("val_score"))
+        lr = as_float(row.get("tune_lr"))
+        kernel_multiplier = as_float(row.get("kernel_scale_multiplier"))
         if math.isfinite(tau) and math.isfinite(score):
-            points.append((tau, score))
+            points.append(
+                {
+                    "tau": tau,
+                    "score": score,
+                    "lr": lr,
+                    "kernel_multiplier": kernel_multiplier,
+                }
+            )
     if not points:
         return
-    points.sort()
-    xs = np.asarray([p[0] for p in points], dtype=float)
-    ys = np.asarray([p[1] for p in points], dtype=float)
+    points.sort(key=lambda p: (p["tau"], p["lr"], p["kernel_multiplier"]))
+    xs = np.asarray([p["tau"] for p in points], dtype=float)
+    ys = np.asarray([p["score"] for p in points], dtype=float)
     best_idx = int(np.argmin(ys))
     fig, ax = plt.subplots(figsize=(3.25, 2.5))
-    ax.plot(xs, ys, marker="o", color="#264653")
-    ax.scatter([xs[best_idx]], [ys[best_idx]], color="#E76F51", zorder=4, label=f"{label_prefix}={xs[best_idx]:g}")
+    lrs = sorted({p["lr"] for p in points if math.isfinite(p["lr"])})
+    kernel_multipliers = sorted(
+        {p["kernel_multiplier"] for p in points if math.isfinite(p["kernel_multiplier"])}
+    )
+    has_grid = len(lrs) > 1 or len(kernel_multipliers) > 1
+    if has_grid:
+        color_map = {lr: plt.cm.viridis(i / max(len(lrs) - 1, 1)) for i, lr in enumerate(lrs)}
+        marker_cycle = ["o", "s", "^", "D", "P"]
+        marker_map = {
+            kernel_multiplier: marker_cycle[i % len(marker_cycle)]
+            for i, kernel_multiplier in enumerate(kernel_multipliers)
+        }
+        for lr in lrs or [float("nan")]:
+            for kernel_multiplier in kernel_multipliers or [float("nan")]:
+                group = [
+                    p
+                    for p in points
+                    if (
+                        (not lrs or p["lr"] == lr)
+                        and (not kernel_multipliers or p["kernel_multiplier"] == kernel_multiplier)
+                    )
+                ]
+                if not group:
+                    continue
+                label_bits = []
+                if math.isfinite(lr):
+                    label_bits.append(f"lr={lr:g}")
+                if math.isfinite(kernel_multiplier):
+                    label_bits.append(f"ks={kernel_multiplier:g}")
+                ax.scatter(
+                    [p["tau"] for p in group],
+                    [p["score"] for p in group],
+                    s=28,
+                    color=color_map.get(lr, "#264653"),
+                    marker=marker_map.get(kernel_multiplier, "o"),
+                    edgecolor="white",
+                    linewidth=0.5,
+                    label=", ".join(label_bits),
+                    alpha=0.9,
+                )
+    else:
+        ax.plot(xs, ys, marker="o", color="#264653")
+    best = points[best_idx]
+    best_label = f"{label_prefix}={best['tau']:g}"
+    if math.isfinite(best["lr"]):
+        best_label += f", lr={best['lr']:g}"
+    if math.isfinite(best["kernel_multiplier"]):
+        best_label += f", ks={best['kernel_multiplier']:g}"
+    ax.scatter(
+        [best["tau"]],
+        [best["score"]],
+        marker="*",
+        s=120,
+        color="#E76F51",
+        edgecolor="black",
+        linewidth=0.4,
+        zorder=4,
+        label=best_label,
+    )
     ax.set_xlabel("candidate tau")
     ax.set_ylabel("Validation MNIST-FID")
     ax.set_title(title)
-    ax.legend(loc="best")
+    ax.legend(loc="best", fontsize=6)
     save_fig(fig, diagnostics_dir / outstem)
 
 

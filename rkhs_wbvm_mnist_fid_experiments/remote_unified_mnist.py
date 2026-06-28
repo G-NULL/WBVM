@@ -60,6 +60,20 @@ def run_script_text(args: argparse.Namespace) -> str:
         parts.extend(["--single-steps", str(args.single_steps)])
     if args.wbvm_single_taus is not None:
         parts.extend(["--wbvm-single-taus", q(args.wbvm_single_taus)])
+    if args.wbvm_tune_lrs is not None:
+        parts.extend(["--wbvm-tune-lrs", q(args.wbvm_tune_lrs)])
+    if args.wbvm_tune_kernel_multipliers is not None:
+        parts.extend(["--wbvm-tune-kernel-multipliers", q(args.wbvm_tune_kernel_multipliers)])
+    if args.vmmd_tune_lrs is not None:
+        parts.extend(["--vmmd-tune-lrs", q(args.vmmd_tune_lrs)])
+    if args.vmmd_tune_kernel_multipliers is not None:
+        parts.extend(["--vmmd-tune-kernel-multipliers", q(args.vmmd_tune_kernel_multipliers)])
+    if args.vmmd_early_stop_min_steps is not None:
+        parts.extend(["--vmmd-early-stop-min-steps", str(args.vmmd_early_stop_min_steps)])
+    if args.vmmd_early_stop_patience is not None:
+        parts.extend(["--vmmd-early-stop-patience", str(args.vmmd_early_stop_patience)])
+    if args.vmmd_early_stop_min_delta is not None:
+        parts.extend(["--vmmd-early-stop-min-delta", str(args.vmmd_early_stop_min_delta)])
     if args.train_n is not None:
         parts.extend(["--train-n", str(args.train_n)])
     if args.fid_samples is not None:
@@ -237,6 +251,13 @@ def main() -> None:
     parser.add_argument("--vector-loss-statistic", default="u", choices=["u", "v"])
     parser.add_argument("--single-steps", type=int, default=None)
     parser.add_argument("--wbvm-single-taus", default=None)
+    parser.add_argument("--wbvm-tune-lrs", default=None)
+    parser.add_argument("--wbvm-tune-kernel-multipliers", default=None)
+    parser.add_argument("--vmmd-tune-lrs", default=None)
+    parser.add_argument("--vmmd-tune-kernel-multipliers", default=None)
+    parser.add_argument("--vmmd-early-stop-min-steps", type=int, default=None)
+    parser.add_argument("--vmmd-early-stop-patience", type=int, default=None)
+    parser.add_argument("--vmmd-early-stop-min-delta", type=float, default=None)
     parser.add_argument("--steps", type=int, default=None)
     parser.add_argument("--train-n", type=int, default=None)
     parser.add_argument("--fid-samples", type=int, default=None)

@@ -183,6 +183,16 @@ class MnistExperimentV2Tests(unittest.TestCase):
         self.assertEqual(stopper.stop_step, 4)
         self.assertIn("relative change", stopper.reason)
 
+    def test_quick_and_standard_presets_disable_early_stopping(self) -> None:
+        for preset in ("quick", "standard"):
+            cfg = preset_config(preset, 7, ["wbvm_single", "wbvm_vector"], "pixel")
+            self.assertEqual(cfg.early_stop_min_steps, 0)
+            self.assertEqual(cfg.early_stop_patience, 0)
+            self.assertEqual(cfg.early_stop_min_delta, 0.0)
+            self.assertEqual(cfg.vmmd_early_stop_min_steps, 0)
+            self.assertEqual(cfg.vmmd_early_stop_patience, 0)
+            self.assertEqual(cfg.vmmd_early_stop_min_delta, 0.0)
+
     def test_sample_grid_reserves_label_column(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "grid.png"

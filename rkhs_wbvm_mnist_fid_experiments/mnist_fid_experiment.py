@@ -7,7 +7,7 @@ import random
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Tuple
 
 import matplotlib
 
@@ -50,6 +50,10 @@ class MnistConfig:
     all_tau_low: float
     all_tau_high: float
     wbvm_single_taus: List[float]
+    wbvm_tune_lrs: List[float]
+    wbvm_tune_kernel_multipliers: List[float]
+    vmmd_tune_lrs: List[float]
+    vmmd_tune_kernel_multipliers: List[float]
     kernel_scales: List[float]
     kernel_bandwidth_points: int
     vector_loss_statistic: str
@@ -97,6 +101,9 @@ class MnistConfig:
     early_stop_patience: int
     early_stop_min_delta: float
     early_stop_metric: str
+    vmmd_early_stop_min_steps: int
+    vmmd_early_stop_patience: int
+    vmmd_early_stop_min_delta: float
     methods: List[str]
 
 
@@ -1269,6 +1276,13 @@ def train_wbvm_vector(
     return model, info
 
 
+def scaled_kernel_scales(scales: Sequence[float], multiplier: float) -> List[float]:
+    value = float(multiplier)
+    if value <= 0.0:
+        raise ValueError("Kernel scale multiplier must be positive")
+    return [float(scale) * value for scale in scales]
+
+
 def train_wbvm_single(
     train_loader: InfiniteLoader,
     val_loader: DataLoader,
@@ -1286,53 +1300,85 @@ def train_wbvm_single(
     best_fid = float("inf")
     rows: List[Dict[str, object]] = []
 
+    candidate_index = 0
     for tau_value in cfg.wbvm_single_taus:
-        local_cfg = MnistConfig(**{**asdict(cfg), "steps": cfg.single_steps, "all_tau_low": tau_value, "all_tau_high": tau_value})
-        model, info = train_wbvm_all(
-            train_loader,
-            local_cfg,
-            device,
-            codec,
-            log_dir=log_dir,
-            log_name=f"WBVM-single-tau-{tau_value:.2f}",
-            extra_hparams={"parent_method": "WBVM-single", "candidate_tau": tau_value},
-        )
-        score = compute_mnist_fid_for_sampler(
-            lambda n, b: sample_direct(model, n, b, device, cfg, codec),
-            val_loader,
-            cfg,
-            device,
-            feature_net,
-            n_samples=min(cfg.val_n, len(val_loader.dataset)),
-        )
-        row = {
-            "method": "WBVM-single-candidate",
-            "tau": tau_value,
-            "val_metric": "mnist_fid",
-            "val_score": score,
-            **info,
-        }
-        rows.append(row)
-        print(f"WBVM-single tau={tau_value:.2f} validation MNIST-FID={score:.3f}", flush=True)
-        if score < best_fid:
-            if best_model is not None:
-                del best_model
-                if device.type == "cuda":
-                    torch.cuda.empty_cache()
-            best_model = model
-            best_fid = score
-            best_info = dict(info)
-            best_info.update(
-                {
-                    "selected_tau": tau_value,
-                    "validation_metric": "mnist_fid",
-                    "validation_score": score,
+        for lr in cfg.wbvm_tune_lrs:
+            for kernel_multiplier in cfg.wbvm_tune_kernel_multipliers:
+                candidate_index += 1
+                set_seed(cfg.seed + 4000 + candidate_index)
+                local_cfg = MnistConfig(
+                    **{
+                        **asdict(cfg),
+                        "steps": cfg.single_steps,
+                        "all_tau_low": tau_value,
+                        "all_tau_high": tau_value,
+                        "lr": lr,
+                        "kernel_scales": scaled_kernel_scales(cfg.kernel_scales, kernel_multiplier),
+                    }
+                )
+                log_suffix = f"tau-{tau_value:.2f}-lr-{lr:g}-ks-{kernel_multiplier:g}"
+                extra_hparams = {
+                    "parent_method": "WBVM-single",
+                    "candidate_tau": tau_value,
+                    "tune_lr": lr,
+                    "kernel_scale_multiplier": kernel_multiplier,
+                    "kernel_scales_after_multiplier": local_cfg.kernel_scales,
                 }
-            )
-        else:
-            del model
-            if device.type == "cuda":
-                torch.cuda.empty_cache()
+                model, info = train_wbvm_all(
+                    train_loader,
+                    local_cfg,
+                    device,
+                    codec,
+                    log_dir=log_dir,
+                    log_name=f"WBVM-single-{log_suffix}",
+                    extra_hparams=extra_hparams,
+                )
+                score = compute_mnist_fid_for_sampler(
+                    lambda n, b: sample_direct(model, n, b, device, cfg, codec),
+                    val_loader,
+                    cfg,
+                    device,
+                    feature_net,
+                    n_samples=min(cfg.val_n, len(val_loader.dataset)),
+                )
+                row = {
+                    "method": "WBVM-single-candidate",
+                    "tau": tau_value,
+                    "tune_lr": lr,
+                    "kernel_scale_multiplier": kernel_multiplier,
+                    "kernel_scales_after_multiplier": ",".join(f"{s:.6g}" for s in local_cfg.kernel_scales),
+                    "val_metric": "mnist_fid",
+                    "val_score": score,
+                    **info,
+                }
+                rows.append(row)
+                print(
+                    f"WBVM-single tau={tau_value:.2f} lr={lr:g} kernel_multiplier={kernel_multiplier:g} "
+                    f"validation MNIST-FID={score:.3f}",
+                    flush=True,
+                )
+                if score < best_fid:
+                    if best_model is not None:
+                        del best_model
+                        if device.type == "cuda":
+                            torch.cuda.empty_cache()
+                    best_model = model
+                    best_fid = score
+                    best_info = dict(info)
+                    best_info.update(
+                        {
+                            "selected_tau": tau_value,
+                            "tuned_lr": lr,
+                            "tuned_kernel_scale_multiplier": kernel_multiplier,
+                            "tuned_kernel_scales": ",".join(f"{s:.6g}" for s in local_cfg.kernel_scales),
+                            "validation_metric": "mnist_fid",
+                            "validation_score": score,
+                        }
+                    )
+                else:
+                    del model
+                    if device.type == "cuda":
+                        torch.cuda.empty_cache()
 
     if best_model is None:
         raise RuntimeError("No WBVM-single candidate finished")
@@ -1360,52 +1406,87 @@ def train_wbvm_vector_single(
     best_score = float("inf")
     rows: List[Dict[str, object]] = []
 
+    candidate_index = 0
     for tau_value in cfg.wbvm_single_taus:
-        local_cfg = MnistConfig(**{**asdict(cfg), "steps": cfg.single_steps, "all_tau_low": tau_value, "all_tau_high": tau_value})
-        model, info = train_wbvm_vector(
-            train_loader,
-            local_cfg,
-            device,
-            codec,
-            log_dir=log_dir,
-            log_name=f"vMMD-WBVM-single-tau-{tau_value:.2f}",
-            extra_hparams={"parent_method": "vMMD-WBVM-single", "candidate_tau": tau_value},
-        )
-        score = selection_score_for_sampler(
-            lambda n, b, m=model: sample_direct(m, n, b, device, cfg, codec),
-            val_loader,
-            cfg,
-            device,
-            feature_net,
-        )
-        row = {
-            "method": "vMMD-WBVM-single-candidate",
-            "tau": tau_value,
-            "val_metric": cfg.selection_metric,
-            "val_score": score,
-            **info,
-        }
-        rows.append(row)
-        print(f"vMMD-WBVM tau={tau_value:.2f} validation {cfg.selection_metric}={score:.3f}", flush=True)
-        if score < best_score:
-            if best_model is not None:
-                del best_model
-                if device.type == "cuda":
-                    torch.cuda.empty_cache()
-            best_model = model
-            best_score = score
-            best_info = dict(info)
-            best_info.update(
-                {
-                    "selected_tau": tau_value,
-                    "validation_metric": cfg.selection_metric,
-                    "validation_score": score,
+        for lr in cfg.vmmd_tune_lrs:
+            for kernel_multiplier in cfg.vmmd_tune_kernel_multipliers:
+                candidate_index += 1
+                set_seed(cfg.seed + 5000 + candidate_index)
+                local_cfg = MnistConfig(
+                    **{
+                        **asdict(cfg),
+                        "steps": cfg.single_steps,
+                        "all_tau_low": tau_value,
+                        "all_tau_high": tau_value,
+                        "lr": lr,
+                        "kernel_scales": scaled_kernel_scales(cfg.kernel_scales, kernel_multiplier),
+                        "early_stop_min_steps": cfg.vmmd_early_stop_min_steps,
+                        "early_stop_patience": cfg.vmmd_early_stop_patience,
+                        "early_stop_min_delta": cfg.vmmd_early_stop_min_delta,
+                    }
+                )
+                log_suffix = f"tau-{tau_value:.2f}-lr-{lr:g}-ks-{kernel_multiplier:g}"
+                extra_hparams = {
+                    "parent_method": "vMMD-WBVM-single",
+                    "candidate_tau": tau_value,
+                    "tune_lr": lr,
+                    "kernel_scale_multiplier": kernel_multiplier,
+                    "kernel_scales_after_multiplier": local_cfg.kernel_scales,
                 }
-            )
-        else:
-            del model
-            if device.type == "cuda":
-                torch.cuda.empty_cache()
+                model, info = train_wbvm_vector(
+                    train_loader,
+                    local_cfg,
+                    device,
+                    codec,
+                    log_dir=log_dir,
+                    log_name=f"vMMD-WBVM-single-{log_suffix}",
+                    extra_hparams=extra_hparams,
+                )
+                score = selection_score_for_sampler(
+                    lambda n, b, m=model: sample_direct(m, n, b, device, cfg, codec),
+                    val_loader,
+                    cfg,
+                    device,
+                    feature_net,
+                )
+                row = {
+                    "method": "vMMD-WBVM-single-candidate",
+                    "tau": tau_value,
+                    "tune_lr": lr,
+                    "kernel_scale_multiplier": kernel_multiplier,
+                    "kernel_scales_after_multiplier": ",".join(f"{s:.6g}" for s in local_cfg.kernel_scales),
+                    "val_metric": cfg.selection_metric,
+                    "val_score": score,
+                    **info,
+                }
+                rows.append(row)
+                print(
+                    f"vMMD-WBVM tau={tau_value:.2f} lr={lr:g} kernel_multiplier={kernel_multiplier:g} "
+                    f"validation {cfg.selection_metric}={score:.3f}",
+                    flush=True,
+                )
+                if score < best_score:
+                    if best_model is not None:
+                        del best_model
+                        if device.type == "cuda":
+                            torch.cuda.empty_cache()
+                    best_model = model
+                    best_score = score
+                    best_info = dict(info)
+                    best_info.update(
+                        {
+                            "selected_tau": tau_value,
+                            "tuned_lr": lr,
+                            "tuned_kernel_scale_multiplier": kernel_multiplier,
+                            "tuned_kernel_scales": ",".join(f"{s:.6g}" for s in local_cfg.kernel_scales),
+                            "validation_metric": cfg.selection_metric,
+                            "validation_score": score,
+                        }
+                    )
+                else:
+                    del model
+                    if device.type == "cuda":
+                        torch.cuda.empty_cache()
 
     if best_model is None:
         raise RuntimeError("No vMMD-WBVM-single candidate finished")
@@ -2567,6 +2648,8 @@ def write_run_hyperparameters(rows: List[Dict[str, object]], outdir: Path) -> No
                 "early_stop_reason": row.get("early_stop_reason", ""),
                 "selected_tau": row.get("selected_tau", ""),
                 "tuned_lr": row.get("tuned_lr", ""),
+                "tuned_kernel_scale_multiplier": row.get("tuned_kernel_scale_multiplier", ""),
+                "tuned_kernel_scales": row.get("tuned_kernel_scales", ""),
                 "tuned_meanflow_norm_p": row.get("tuned_meanflow_norm_p", ""),
                 "tuned_shortcut_bootstrap_every": row.get("tuned_shortcut_bootstrap_every", ""),
                 "tuned_shortcut_ema_decay": row.get("tuned_shortcut_ema_decay", ""),
@@ -2612,6 +2695,10 @@ def preset_config(preset: str, seed: int, methods: List[str], model_space: str =
             all_tau_low=0.35,
             all_tau_high=0.90,
             wbvm_single_taus=[0.3, 0.5, 0.7],
+            wbvm_tune_lrs=[2e-4],
+            wbvm_tune_kernel_multipliers=[1.0],
+            vmmd_tune_lrs=[2e-4],
+            vmmd_tune_kernel_multipliers=[1.0],
             kernel_scales=[0.5, 1.0, 2.0, 4.0],
             kernel_bandwidth_points=512,
             vector_loss_statistic="u",
@@ -2659,6 +2746,9 @@ def preset_config(preset: str, seed: int, methods: List[str], model_space: str =
             early_stop_patience=0,
             early_stop_min_delta=0.0,
             early_stop_metric="abs_loss",
+            vmmd_early_stop_min_steps=0,
+            vmmd_early_stop_patience=0,
+            vmmd_early_stop_min_delta=0.0,
             methods=methods,
         )
     if preset == "quick":
@@ -2681,6 +2771,10 @@ def preset_config(preset: str, seed: int, methods: List[str], model_space: str =
             all_tau_low=0.35,
             all_tau_high=0.90,
             wbvm_single_taus=[0.3, 0.5, 0.7],
+            wbvm_tune_lrs=[1e-4, 2e-4, 5e-4],
+            wbvm_tune_kernel_multipliers=[0.5, 1.0, 2.0],
+            vmmd_tune_lrs=[1e-4, 2e-4, 5e-4],
+            vmmd_tune_kernel_multipliers=[0.5, 1.0, 2.0],
             kernel_scales=[0.5, 1.0, 2.0, 4.0],
             kernel_bandwidth_points=1024,
             vector_loss_statistic="u",
@@ -2724,10 +2818,13 @@ def preset_config(preset: str, seed: int, methods: List[str], model_space: str =
             meanflow_norm_p=1.0,
             meanflow_norm_eps=0.01,
             shortcut_bootstrap_every=8,
-            early_stop_min_steps=300,
-            early_stop_patience=200,
-            early_stop_min_delta=1e-4,
+            early_stop_min_steps=0,
+            early_stop_patience=0,
+            early_stop_min_delta=0.0,
             early_stop_metric="abs_loss",
+            vmmd_early_stop_min_steps=0,
+            vmmd_early_stop_patience=0,
+            vmmd_early_stop_min_delta=0.0,
             methods=methods,
         )
     if preset == "standard":
@@ -2750,6 +2847,10 @@ def preset_config(preset: str, seed: int, methods: List[str], model_space: str =
             all_tau_low=0.35,
             all_tau_high=0.90,
             wbvm_single_taus=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+            wbvm_tune_lrs=[1e-4, 2e-4, 5e-4],
+            wbvm_tune_kernel_multipliers=[0.5, 1.0, 2.0],
+            vmmd_tune_lrs=[1e-4, 2e-4, 5e-4],
+            vmmd_tune_kernel_multipliers=[0.5, 1.0, 2.0],
             kernel_scales=[0.5, 1.0, 2.0, 4.0],
             kernel_bandwidth_points=2048,
             vector_loss_statistic="u",
@@ -2793,10 +2894,13 @@ def preset_config(preset: str, seed: int, methods: List[str], model_space: str =
             meanflow_norm_p=1.0,
             meanflow_norm_eps=0.01,
             shortcut_bootstrap_every=8,
-            early_stop_min_steps=1200,
-            early_stop_patience=500,
-            early_stop_min_delta=1e-4,
+            early_stop_min_steps=0,
+            early_stop_patience=0,
+            early_stop_min_delta=0.0,
             early_stop_metric="abs_loss",
+            vmmd_early_stop_min_steps=0,
+            vmmd_early_stop_patience=0,
+            vmmd_early_stop_min_delta=0.0,
             methods=methods,
         )
     raise ValueError(f"Unknown preset {preset}")
@@ -2990,6 +3094,14 @@ def run(args: argparse.Namespace) -> None:
         cfg.num_workers = args.num_workers
     if args.wbvm_single_taus is not None:
         cfg.wbvm_single_taus = parse_float_list(args.wbvm_single_taus)
+    if args.wbvm_tune_lrs is not None:
+        cfg.wbvm_tune_lrs = parse_float_list(args.wbvm_tune_lrs)
+    if args.wbvm_tune_kernel_multipliers is not None:
+        cfg.wbvm_tune_kernel_multipliers = parse_float_list(args.wbvm_tune_kernel_multipliers)
+    if args.vmmd_tune_lrs is not None:
+        cfg.vmmd_tune_lrs = parse_float_list(args.vmmd_tune_lrs)
+    if args.vmmd_tune_kernel_multipliers is not None:
+        cfg.vmmd_tune_kernel_multipliers = parse_float_list(args.vmmd_tune_kernel_multipliers)
     if args.all_tau_low is not None:
         cfg.all_tau_low = args.all_tau_low
     if args.all_tau_high is not None:
@@ -3010,6 +3122,12 @@ def run(args: argparse.Namespace) -> None:
         cfg.early_stop_min_delta = args.early_stop_min_delta
     if args.early_stop_metric is not None:
         cfg.early_stop_metric = args.early_stop_metric
+    if args.vmmd_early_stop_min_steps is not None:
+        cfg.vmmd_early_stop_min_steps = args.vmmd_early_stop_min_steps
+    if args.vmmd_early_stop_patience is not None:
+        cfg.vmmd_early_stop_patience = args.vmmd_early_stop_patience
+    if args.vmmd_early_stop_min_delta is not None:
+        cfg.vmmd_early_stop_min_delta = args.vmmd_early_stop_min_delta
     if args.no_extra_mnist_metrics:
         cfg.extra_mnist_metrics = False
     cfg.drifting_space = cfg.model_space
@@ -3092,7 +3210,17 @@ def run(args: argparse.Namespace) -> None:
     }
 
     if "wbvm_single" in cfg.methods:
-        model, info, _ = train_wbvm_single(infinite, val_loader, cfg, device, outdir, feature_net, codec, log_dir=log_dir)
+        model, info, candidate_rows = train_wbvm_single(
+            infinite,
+            val_loader,
+            cfg,
+            device,
+            outdir,
+            feature_net,
+            codec,
+            log_dir=log_dir,
+        )
+        tuning_rows.extend(candidate_rows)
         sampler = lambda n, b, m=model: sample_direct(m, n, b, device, cfg, codec)
         metrics = compute_eval_metrics_for_sampler(lambda n, b: sampler(n, b), test_loader, cfg, device, feature_net)
         samples = sampler(32, min(32, cfg.fid_batch_size))
@@ -3189,6 +3317,10 @@ def main() -> None:
     parser.add_argument("--kernel-batch", type=int, default=None)
     parser.add_argument("--hidden", type=int, default=None)
     parser.add_argument("--wbvm-single-taus", default=None)
+    parser.add_argument("--wbvm-tune-lrs", default=None)
+    parser.add_argument("--wbvm-tune-kernel-multipliers", default=None)
+    parser.add_argument("--vmmd-tune-lrs", default=None)
+    parser.add_argument("--vmmd-tune-kernel-multipliers", default=None)
     parser.add_argument("--all-tau-low", type=float, default=None)
     parser.add_argument("--all-tau-high", type=float, default=None)
     parser.add_argument("--fid-backend", choices=["inception", "mnist"], default=None)
@@ -3199,6 +3331,9 @@ def main() -> None:
     parser.add_argument("--early-stop-patience", type=int, default=None)
     parser.add_argument("--early-stop-min-delta", type=float, default=None)
     parser.add_argument("--early-stop-metric", choices=["loss", "abs_loss"], default=None)
+    parser.add_argument("--vmmd-early-stop-min-steps", type=int, default=None)
+    parser.add_argument("--vmmd-early-stop-patience", type=int, default=None)
+    parser.add_argument("--vmmd-early-stop-min-delta", type=float, default=None)
     parser.add_argument("--no-extra-mnist-metrics", action="store_true")
     parser.add_argument("--tune-baselines", action="store_true")
     args = parser.parse_args()
