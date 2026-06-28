@@ -794,23 +794,17 @@ def vector_flux_kernel_bilinear_means(
     sigmas: torch.Tensor,
     drop_diagonal: bool = False,
 ) -> torch.Tensor:
-    """Mean of v^T K(x,y) w for K=diag(k_j(x_j,y_j)).
-
-    Each output component has its own one-dimensional RBF kernel, so this is
-    not the older scalar RBF kernel multiplied by the identity matrix.
-    """
+    """Mean of v^T K(x,y) w for K(x,y)=k(||x-y||) I."""
     sigma2 = sigmas.to(x.device, x.dtype).flatten().pow(2).clamp_min(1e-6)
-    per_scale = []
+    sqdist = x.new_zeros(x.shape[0], y.shape[0])
+    dot_vw = x.new_zeros(x.shape[0], y.shape[0])
     chunk = 256
-    for s2 in sigma2:
-        total = x.new_zeros(x.shape[0], y.shape[0])
-        for start in range(0, x.shape[1], chunk):
-            stop = min(start + chunk, x.shape[1])
-            diff = x[:, None, start:stop] - y[None, :, start:stop]
-            k = torch.exp(-0.5 * diff.pow(2) / s2)
-            total = total + (k * v[:, None, start:stop] * w[None, :, start:stop]).sum(dim=-1)
-        per_scale.append(total)
-    values = torch.stack(per_scale, dim=0)
+    for start in range(0, x.shape[1], chunk):
+        stop = min(start + chunk, x.shape[1])
+        diff = x[:, None, start:stop] - y[None, :, start:stop]
+        sqdist = sqdist + diff.pow(2).sum(dim=-1)
+        dot_vw = dot_vw + (v[:, None, start:stop] * w[None, :, start:stop]).sum(dim=-1)
+    values = torch.exp(-0.5 * sqdist.unsqueeze(0) / sigma2.view(-1, 1, 1)) * dot_vw.unsqueeze(0)
     if drop_diagonal:
         if x.shape[0] != y.shape[0]:
             raise ValueError("drop_diagonal=True requires square same-size batches")
@@ -831,11 +825,7 @@ def vector_flux_mmd2(
     include_data_data: bool = True,
     statistic: str = "u",
 ) -> torch.Tensor:
-    """Squared vector-flux MMD route for K(x,x') = diag_j k_j(x_j,x'_j).
-
-    This treats each coordinate as an independent scalar RKHS channel, so the
-    matrix-valued kernel is diagonal with one RBF per component.
-    """
+    """Squared vector-flux MMD route for K(x,x') = k(||x-x'||) I."""
     if statistic not in {"u", "v"}:
         raise ValueError(f"Unknown vector-flux statistic {statistic!r}")
     drop_diagonal = statistic == "u" and not include_data_data
@@ -1264,11 +1254,11 @@ def train_wbvm_vector(
         "kernel_base_sigma": sigma0,
         "kernel_sigmas": ",".join(f"{float(s):.6g}" for s in sigmas.detach().cpu()),
         "loss": last_loss,
-        "loss_statistic": f"vector_flux_component_diag_rbf_full_mmd_{cfg.vector_loss_statistic}",
+        "loss_statistic": f"vector_flux_scalar_rbf_identity_full_mmd_{cfg.vector_loss_statistic}",
         "nfe": 1,
         "model_space": cfg.model_space,
         "note": (
-            "route-two vector-valued RKHS flux MMD with component-wise diagonal RBF kernel; "
+            "route-two vector-valued RKHS flux MMD with scalar RBF kernel times identity matrix; "
             f"{cfg.direct_backbone} direct generator; {cfg.model_space} space"
         ),
         **early.info(cfg.steps),

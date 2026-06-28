@@ -152,7 +152,7 @@ class MnistExperimentV2Tests(unittest.TestCase):
 
         self.assertGreaterEqual(float(loss), -1e-6)
 
-    def test_vector_flux_kernel_uses_componentwise_diagonal_rbf(self) -> None:
+    def test_vector_flux_kernel_uses_scalar_rbf_identity_matrix(self) -> None:
         x = torch.tensor([[0.0, 0.0]])
         y = torch.tensor([[1.0, 2.0]])
         v = torch.tensor([[2.0, 3.0]])
@@ -160,11 +160,13 @@ class MnistExperimentV2Tests(unittest.TestCase):
         sigmas = torch.tensor([1.0])
 
         value = vector_flux_kernel_bilinear_means(x, v, y, w, sigmas)
-        expected = 2.0 * 5.0 * torch.exp(torch.tensor(-0.5)) + 3.0 * 7.0 * torch.exp(torch.tensor(-2.0))
-        old_scalar_identity_value = (2.0 * 5.0 + 3.0 * 7.0) * torch.exp(torch.tensor(-2.5))
+        expected = (2.0 * 5.0 + 3.0 * 7.0) * torch.exp(torch.tensor(-2.5))
+        componentwise_diagonal_value = (
+            2.0 * 5.0 * torch.exp(torch.tensor(-0.5)) + 3.0 * 7.0 * torch.exp(torch.tensor(-2.0))
+        )
 
         self.assertTrue(torch.allclose(value.squeeze(), expected, atol=1e-6))
-        self.assertFalse(torch.allclose(value.squeeze(), old_scalar_identity_value, atol=1e-6))
+        self.assertFalse(torch.allclose(value.squeeze(), componentwise_diagonal_value, atol=1e-6))
 
     def test_early_stopper_detects_flat_loss_window(self) -> None:
         cfg = preset_config("smoke", 7, ["meanflow"], "pixel")
