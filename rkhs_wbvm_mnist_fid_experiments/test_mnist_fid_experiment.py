@@ -9,6 +9,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, TensorDataset
 
 from mnist_fid_experiment import (
+    EarlyStopper,
     IMAGE_SHAPE,
     InfiniteLoader,
     LATENT_SHAPE,
@@ -27,6 +28,7 @@ from mnist_fid_experiment import (
     train_wbvm_all,
     train_wbvm_vector,
     vector_flux_mmd2,
+    vector_flux_kernel_bilinear_means,
 )
 
 
@@ -137,6 +139,47 @@ class MnistExperimentV2Tests(unittest.TestCase):
         loss = vector_flux_mmd2(x, v, x, -v, sigmas=sigmas, include_data_data=True, statistic="v")
 
         self.assertGreater(float(loss), 0.1)
+
+    def test_vector_flux_full_mmd_is_nonnegative_for_mismatch(self) -> None:
+        torch.manual_seed(13)
+        x = torch.randn(8, 3)
+        y = torch.randn(8, 3)
+        v = torch.randn(8, 3)
+        w = torch.randn(8, 3)
+        sigmas = torch.tensor([0.75])
+
+        loss = vector_flux_mmd2(x, v, y, w, sigmas=sigmas, include_data_data=True, statistic="u")
+
+        self.assertGreaterEqual(float(loss), -1e-6)
+
+    def test_vector_flux_kernel_uses_componentwise_diagonal_rbf(self) -> None:
+        x = torch.tensor([[0.0, 0.0]])
+        y = torch.tensor([[1.0, 2.0]])
+        v = torch.tensor([[2.0, 3.0]])
+        w = torch.tensor([[5.0, 7.0]])
+        sigmas = torch.tensor([1.0])
+
+        value = vector_flux_kernel_bilinear_means(x, v, y, w, sigmas)
+        expected = 2.0 * 5.0 * torch.exp(torch.tensor(-0.5)) + 3.0 * 7.0 * torch.exp(torch.tensor(-2.0))
+        old_scalar_identity_value = (2.0 * 5.0 + 3.0 * 7.0) * torch.exp(torch.tensor(-2.5))
+
+        self.assertTrue(torch.allclose(value.squeeze(), expected, atol=1e-6))
+        self.assertFalse(torch.allclose(value.squeeze(), old_scalar_identity_value, atol=1e-6))
+
+    def test_early_stopper_detects_flat_loss_window(self) -> None:
+        cfg = preset_config("smoke", 7, ["meanflow"], "pixel")
+        cfg.early_stop_min_steps = 4
+        cfg.early_stop_patience = 4
+        cfg.early_stop_min_delta = 1e-3
+        stopper = EarlyStopper(cfg)
+
+        stopped = False
+        for step, loss in enumerate([1.0000, 0.9999, 1.0001, 1.0000], start=1):
+            stopped = stopper.update(step, loss)
+
+        self.assertTrue(stopped)
+        self.assertEqual(stopper.stop_step, 4)
+        self.assertIn("relative change", stopper.reason)
 
     def test_sample_grid_reserves_label_column(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

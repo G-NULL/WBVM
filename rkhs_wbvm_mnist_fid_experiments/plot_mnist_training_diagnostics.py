@@ -19,7 +19,7 @@ if str(SCRIPT_DIR) not in sys.path:
 
 
 COLORS = ["#264653", "#2A9D8F", "#E9C46A", "#F4A261", "#E76F51", "#0072B2", "#CC79A7", "#8C8C8C"]
-METHOD_ORDER = ["Drifting", "WBVM-single", "MeanFlow", "WBVM-all", "vMMD-WBVM", "ShortcutFlow", "Real"]
+METHOD_ORDER = ["Drifting", "WBVM-single", "MeanFlow", "vMMD-WBVM", "ShortcutFlow", "Real"]
 
 
 plt.rcParams.update(
@@ -95,8 +95,18 @@ def selected_wbvm_tau(metrics_rows: List[Dict[str, str]]) -> Optional[float]:
     return None
 
 
+def selected_vmmd_tau(metrics_rows: List[Dict[str, str]]) -> Optional[float]:
+    for row in metrics_rows:
+        if row.get("method") == "vMMD-WBVM":
+            tau = as_float(row.get("selected_tau"))
+            if math.isfinite(tau):
+                return tau
+    return None
+
+
 def load_training_runs(outdir: Path, metrics_rows: List[Dict[str, str]]) -> List[Dict[str, object]]:
     selected_tau = selected_wbvm_tau(metrics_rows)
+    selected_vmmd = selected_vmmd_tau(metrics_rows)
     runs: List[Dict[str, object]] = []
     for run_dir in sorted((outdir / "training_logs").glob("*")):
         if not run_dir.is_dir():
@@ -117,6 +127,9 @@ def load_training_runs(outdir: Path, metrics_rows: List[Dict[str, str]]) -> List
         if parent == "WBVM-single":
             selected = selected_tau is None or abs(candidate_tau - selected_tau) < 1e-9
             plot_method = "WBVM-single" if selected else f"WBVM-single tau={candidate_tau:g}"
+        elif parent == "vMMD-WBVM-single":
+            selected = selected_vmmd is None or abs(candidate_tau - selected_vmmd) < 1e-9
+            plot_method = "vMMD-WBVM" if selected else f"vMMD-WBVM tau={candidate_tau:g}"
         x, y = finite_xy(steps)
         if x.size == 0:
             continue
@@ -235,8 +248,14 @@ def write_fid_only_table(metrics_rows: List[Dict[str, str]], diagnostics_dir: Pa
     plt.close(fig)
 
 
-def plot_wbvm_tau_selection(outdir: Path, diagnostics_dir: Path) -> None:
-    rows = read_csv(outdir / "wbvm_single_selection.csv")
+def plot_tau_selection(
+    selection_csv: Path,
+    diagnostics_dir: Path,
+    title: str,
+    outstem: str,
+    label_prefix: str,
+) -> None:
+    rows = read_csv(selection_csv)
     points = []
     for row in rows:
         tau = as_float(row.get("tau"))
@@ -251,12 +270,32 @@ def plot_wbvm_tau_selection(outdir: Path, diagnostics_dir: Path) -> None:
     best_idx = int(np.argmin(ys))
     fig, ax = plt.subplots(figsize=(3.25, 2.5))
     ax.plot(xs, ys, marker="o", color="#264653")
-    ax.scatter([xs[best_idx]], [ys[best_idx]], color="#E76F51", zorder=4, label=f"selected tau={xs[best_idx]:g}")
-    ax.set_xlabel("WBVM-single tau")
+    ax.scatter([xs[best_idx]], [ys[best_idx]], color="#E76F51", zorder=4, label=f"{label_prefix}={xs[best_idx]:g}")
+    ax.set_xlabel("candidate tau")
     ax.set_ylabel("Validation MNIST-FID")
-    ax.set_title("WBVM-single Selection")
+    ax.set_title(title)
     ax.legend(loc="best")
-    save_fig(fig, diagnostics_dir / "wbvm_single_tau_selection")
+    save_fig(fig, diagnostics_dir / outstem)
+
+
+def plot_wbvm_tau_selection(outdir: Path, diagnostics_dir: Path) -> None:
+    plot_tau_selection(
+        outdir / "wbvm_single_selection.csv",
+        diagnostics_dir,
+        "WBVM-single Selection",
+        "wbvm_single_tau_selection",
+        "selected tau",
+    )
+
+
+def plot_vmmd_tau_selection(outdir: Path, diagnostics_dir: Path) -> None:
+    plot_tau_selection(
+        outdir / "vmmd_wbvm_single_selection.csv",
+        diagnostics_dir,
+        "vMMD-WBVM Selection",
+        "vmmd_wbvm_tau_selection",
+        "selected tau",
+    )
 
 
 def plot_training_time(metrics_rows: List[Dict[str, str]], diagnostics_dir: Path) -> None:
@@ -373,6 +412,7 @@ def main() -> None:
     plot_loss_curves(runs, diagnostics_dir)
     write_fid_only_table(metrics_rows, diagnostics_dir)
     plot_wbvm_tau_selection(outdir, diagnostics_dir)
+    plot_vmmd_tau_selection(outdir, diagnostics_dir)
     plot_training_time(metrics_rows, diagnostics_dir)
     plot_metric_scatter(metrics_rows, diagnostics_dir)
     plot_sample_panel(outdir, diagnostics_dir)

@@ -12,7 +12,7 @@ from remote_vector_mmd import capture, connect, install_deps, upload_files, uplo
 
 LOCAL_DIR = Path(__file__).resolve().parent
 DEFAULT_OUTDIR = "outputs_mnist_unified_dit_mnistfid"
-DEFAULT_METHODS = "wbvm_all,wbvm_single,wbvm_vector,meanflow,shortcut,drifting"
+DEFAULT_METHODS = "wbvm_single,wbvm_vector,meanflow,shortcut,drifting"
 
 
 def q(value: str) -> str:
@@ -44,6 +44,16 @@ def run_script_text(args: argparse.Namespace) -> str:
         "--outdir",
         q(args.outdir_name),
     ]
+    if args.tune_baselines:
+        parts.append("--tune-baselines")
+    if args.early_stop_min_steps is not None:
+        parts.extend(["--early-stop-min-steps", str(args.early_stop_min_steps)])
+    if args.early_stop_patience is not None:
+        parts.extend(["--early-stop-patience", str(args.early_stop_patience)])
+    if args.early_stop_min_delta is not None:
+        parts.extend(["--early-stop-min-delta", str(args.early_stop_min_delta)])
+    if args.early_stop_metric is not None:
+        parts.extend(["--early-stop-metric", q(args.early_stop_metric)])
     if args.steps is not None:
         parts.extend(["--steps", str(args.steps)])
     if args.single_steps is not None:
@@ -88,6 +98,16 @@ def write_remote_run_script(client: paramiko.SSHClient, args: argparse.Namespace
 
 def start_run(client: paramiko.SSHClient, args: argparse.Namespace) -> None:
     remote_script = write_remote_run_script(client, args)
+    if args.clean_remote_output:
+        cleanup = (
+            f"cd {q(args.remote_dir)}; "
+            f"rm -rf {q(args.outdir_name)} "
+            f"{q(args.outdir_name + '.pid')} {q(args.outdir_name + '.exit')} "
+            f"{q(args.outdir_name + '.log')} {q(args.outdir_name + '_orchestrator.log')}"
+        )
+        code, _, err = capture(client, cleanup, timeout=60)
+        if code != 0:
+            raise RuntimeError(err or "failed to clean previous unified MNIST output")
     command = (
         f"cd {q(args.remote_dir)}; "
         f"nohup bash {q(remote_script)} "
@@ -222,11 +242,17 @@ def main() -> None:
     parser.add_argument("--fid-samples", type=int, default=None)
     parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--kernel-batch", type=int, default=None)
+    parser.add_argument("--tune-baselines", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--early-stop-min-steps", type=int, default=None)
+    parser.add_argument("--early-stop-patience", type=int, default=None)
+    parser.add_argument("--early-stop-min-delta", type=float, default=None)
+    parser.add_argument("--early-stop-metric", choices=["loss", "abs_loss"], default=None)
     parser.add_argument("--num-threads", type=int, default=20)
     parser.add_argument("--num-workers", type=int, default=8)
     parser.add_argument("--no-upload", action="store_true")
     parser.add_argument("--upload-mnist-raw", action="store_true")
     parser.add_argument("--install-deps", action="store_true")
+    parser.add_argument("--clean-remote-output", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--no-start", action="store_true")
     parser.add_argument("--no-wait", action="store_true")
     parser.add_argument("--no-fetch", action="store_true")

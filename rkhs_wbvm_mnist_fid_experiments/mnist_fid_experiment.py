@@ -93,6 +93,10 @@ class MnistConfig:
     meanflow_norm_p: float
     meanflow_norm_eps: float
     shortcut_bootstrap_every: int
+    early_stop_min_steps: int
+    early_stop_patience: int
+    early_stop_min_delta: float
+    early_stop_metric: str
     methods: List[str]
 
 
@@ -772,11 +776,12 @@ def rkhs_flux_u_stat(
     sigmas: torch.Tensor,
     include_data_data: bool = False,
 ) -> torch.Tensor:
-    mm = derivative_kernel_bilinear_means(x_model, v_model, x_model, v_model, sigmas, drop_diagonal=True)
+    full_mmd = include_data_data
+    mm = derivative_kernel_bilinear_means(x_model, v_model, x_model, v_model, sigmas, drop_diagonal=not full_mmd)
     md = derivative_kernel_bilinear_means(x_model, v_model, x_data, v_data, sigmas)
     loss_per_scale = mm - 2.0 * md
     if include_data_data:
-        dd = derivative_kernel_bilinear_means(x_data, v_data, x_data, v_data, sigmas, drop_diagonal=True)
+        dd = derivative_kernel_bilinear_means(x_data, v_data, x_data, v_data, sigmas, drop_diagonal=False)
         loss_per_scale = loss_per_scale + dd
     return loss_per_scale.mean()
 
@@ -789,11 +794,23 @@ def vector_flux_kernel_bilinear_means(
     sigmas: torch.Tensor,
     drop_diagonal: bool = False,
 ) -> torch.Tensor:
-    """Mean of v^T k(x,y) w for the vector-valued kernel K = k I."""
-    sq = torch.cdist(x, y).pow(2)
-    dot_vw = v @ w.T
-    sigma2 = sigmas.to(x.device, x.dtype).flatten().pow(2).clamp_min(1e-6).view(-1, 1, 1)
-    values = torch.exp(-0.5 * sq.unsqueeze(0) / sigma2) * dot_vw.unsqueeze(0)
+    """Mean of v^T K(x,y) w for K=diag(k_j(x_j,y_j)).
+
+    Each output component has its own one-dimensional RBF kernel, so this is
+    not the older scalar RBF kernel multiplied by the identity matrix.
+    """
+    sigma2 = sigmas.to(x.device, x.dtype).flatten().pow(2).clamp_min(1e-6)
+    per_scale = []
+    chunk = 256
+    for s2 in sigma2:
+        total = x.new_zeros(x.shape[0], y.shape[0])
+        for start in range(0, x.shape[1], chunk):
+            stop = min(start + chunk, x.shape[1])
+            diff = x[:, None, start:stop] - y[None, :, start:stop]
+            k = torch.exp(-0.5 * diff.pow(2) / s2)
+            total = total + (k * v[:, None, start:stop] * w[None, :, start:stop]).sum(dim=-1)
+        per_scale.append(total)
+    values = torch.stack(per_scale, dim=0)
     if drop_diagonal:
         if x.shape[0] != y.shape[0]:
             raise ValueError("drop_diagonal=True requires square same-size batches")
@@ -814,14 +831,14 @@ def vector_flux_mmd2(
     include_data_data: bool = True,
     statistic: str = "u",
 ) -> torch.Tensor:
-    """Squared vector-flux MMD route for K(x,x') = k(x,x') I_D.
+    """Squared vector-flux MMD route for K(x,x') = diag_j k_j(x_j,x'_j).
 
-    This treats grad(phi) as one vector-valued RKHS critic, so no Hessian of the
-    scalar RKHS kernel is needed.
+    This treats each coordinate as an independent scalar RKHS channel, so the
+    matrix-valued kernel is diagonal with one RBF per component.
     """
     if statistic not in {"u", "v"}:
         raise ValueError(f"Unknown vector-flux statistic {statistic!r}")
-    drop_diagonal = statistic == "u"
+    drop_diagonal = statistic == "u" and not include_data_data
     sigmas = sigmas.to(x_model.device, x_model.dtype).flatten()
     mm = vector_flux_kernel_bilinear_means(
         x_model,
@@ -1014,6 +1031,56 @@ class TrainingLogger:
         self.closed = True
 
 
+class EarlyStopper:
+    def __init__(self, cfg: MnistConfig):
+        self.min_steps = int(cfg.early_stop_min_steps)
+        self.patience = int(cfg.early_stop_patience)
+        self.min_delta = float(cfg.early_stop_min_delta)
+        self.metric = cfg.early_stop_metric
+        self.values: List[float] = []
+        self.stop_step: Optional[int] = None
+        self.reason = ""
+
+    @property
+    def enabled(self) -> bool:
+        return self.patience > 1 and self.min_delta > 0.0
+
+    def _transform(self, loss: float) -> float:
+        return abs(float(loss)) if self.metric == "abs_loss" else float(loss)
+
+    def update(self, step: int, loss: float) -> bool:
+        if not self.enabled:
+            return False
+        self.values.append(self._transform(loss))
+        if step < self.min_steps or len(self.values) < self.patience:
+            return False
+        window = self.values[-self.patience :]
+        start = sum(window[: max(1, self.patience // 4)]) / max(1, self.patience // 4)
+        end_count = max(1, self.patience // 4)
+        end = sum(window[-end_count:]) / end_count
+        relative = abs(start - end) / max(abs(start), 1e-12)
+        if relative < self.min_delta:
+            self.stop_step = step
+            self.reason = (
+                f"{self.metric} relative change {relative:.3g} over "
+                f"{self.patience} steps < {self.min_delta:.3g}"
+            )
+            return True
+        return False
+
+    def info(self, planned_steps: int) -> Dict[str, object]:
+        return {
+            "stopped_early": self.stop_step is not None,
+            "stop_step": self.stop_step or planned_steps,
+            "planned_steps": planned_steps,
+            "early_stop_reason": self.reason,
+            "early_stop_min_steps": self.min_steps,
+            "early_stop_patience": self.patience,
+            "early_stop_min_delta": self.min_delta,
+            "early_stop_metric": self.metric,
+        }
+
+
 def make_training_logger(
     log_dir: Optional[Path],
     method: str,
@@ -1069,6 +1136,7 @@ def train_wbvm_all(
     logger = make_training_logger(log_dir, log_name, cfg, model, logger_extra)
     start = time.time()
     last_loss = 0.0
+    early = EarlyStopper(cfg)
 
     for step in trange(cfg.steps, desc="WBVM-all", leave=False):
         x1_full = cycle_space_batch(train_loader, cfg, device, codec)
@@ -1087,7 +1155,7 @@ def train_wbvm_all(
             flatten_img(x_data),
             flatten_img(v_data),
             sigmas=sigmas,
-            include_data_data=False,
+            include_data_data=True,
         )
         opt.zero_grad(set_to_none=True)
         loss.backward()
@@ -1104,19 +1172,23 @@ def train_wbvm_all(
                 current_lr(opt),
                 {"tau_mean": float(tau.mean().detach().cpu()), "kernel_base_sigma": sigma0},
             )
+        if early.update(step + 1, last_loss):
+            break
 
     info = {
         "train_seconds": time.time() - start,
-        "train_steps": cfg.steps,
+        "train_steps": early.stop_step or cfg.steps,
         "kernel_base_sigma": sigma0,
         "kernel_sigmas": ",".join(f"{float(s):.6g}" for s in sigmas.detach().cpu()),
         "loss": last_loss,
+        "loss_statistic": "rkhs_flux_full_mmd",
         "nfe": 1,
         "model_space": cfg.model_space,
         "note": (
             "original h(U), independent U, common bridge X0, no tied_X0; "
             f"{cfg.direct_backbone} direct generator; {cfg.model_space} space"
         ),
+        **early.info(cfg.steps),
     }
     if logger is not None:
         logger.close(info)
@@ -1146,6 +1218,7 @@ def train_wbvm_vector(
     logger = make_training_logger(log_dir, log_name, cfg, model, logger_extra)
     start = time.time()
     last_loss = 0.0
+    early = EarlyStopper(cfg)
 
     for step in trange(cfg.steps, desc="vMMD-WBVM", leave=False):
         x1_full = cycle_space_batch(train_loader, cfg, device, codec)
@@ -1164,7 +1237,7 @@ def train_wbvm_vector(
             flatten_img(x_data),
             flatten_img(v_data),
             sigmas=sigmas,
-            include_data_data=False,
+            include_data_data=True,
             statistic=cfg.vector_loss_statistic,
         )
         opt.zero_grad(set_to_none=True)
@@ -1182,20 +1255,23 @@ def train_wbvm_vector(
                 current_lr(opt),
                 {"tau_mean": float(tau.mean().detach().cpu()), "kernel_base_sigma": sigma0},
             )
+        if early.update(step + 1, last_loss):
+            break
 
     info = {
         "train_seconds": time.time() - start,
-        "train_steps": cfg.steps,
+        "train_steps": early.stop_step or cfg.steps,
         "kernel_base_sigma": sigma0,
         "kernel_sigmas": ",".join(f"{float(s):.6g}" for s in sigmas.detach().cpu()),
         "loss": last_loss,
-        "loss_statistic": f"vector_flux_mmd_{cfg.vector_loss_statistic}_theta_terms",
+        "loss_statistic": f"vector_flux_component_diag_rbf_full_mmd_{cfg.vector_loss_statistic}",
         "nfe": 1,
         "model_space": cfg.model_space,
         "note": (
-            "route-two vector-valued RKHS flux MMD; no scalar-kernel Hessian; "
+            "route-two vector-valued RKHS flux MMD with component-wise diagonal RBF kernel; "
             f"{cfg.direct_backbone} direct generator; {cfg.model_space} space"
         ),
+        **early.info(cfg.steps),
     }
     if logger is not None:
         logger.close(info)
@@ -1277,6 +1353,79 @@ def train_wbvm_single(
     return best_model, best_info, rows
 
 
+def train_wbvm_vector_single(
+    train_loader: InfiniteLoader,
+    val_loader: DataLoader,
+    cfg: MnistConfig,
+    device: torch.device,
+    outdir: Path,
+    feature_net: Optional[MnistFeatureNet],
+    codec: Optional[LeNetLatentCodec],
+    log_dir: Optional[Path] = None,
+) -> Tuple[nn.Module, Dict[str, object], List[Dict[str, object]]]:
+    if feature_net is None and cfg.selection_metric in {"mnist_fid", "mnist_kid"}:
+        raise ValueError("vMMD-WBVM-single validation requires the MNIST LeNet feature extractor")
+    best_model: Optional[nn.Module] = None
+    best_info: Dict[str, object] = {}
+    best_score = float("inf")
+    rows: List[Dict[str, object]] = []
+
+    for tau_value in cfg.wbvm_single_taus:
+        local_cfg = MnistConfig(**{**asdict(cfg), "steps": cfg.single_steps, "all_tau_low": tau_value, "all_tau_high": tau_value})
+        model, info = train_wbvm_vector(
+            train_loader,
+            local_cfg,
+            device,
+            codec,
+            log_dir=log_dir,
+            log_name=f"vMMD-WBVM-single-tau-{tau_value:.2f}",
+            extra_hparams={"parent_method": "vMMD-WBVM-single", "candidate_tau": tau_value},
+        )
+        score = selection_score_for_sampler(
+            lambda n, b, m=model: sample_direct(m, n, b, device, cfg, codec),
+            val_loader,
+            cfg,
+            device,
+            feature_net,
+        )
+        row = {
+            "method": "vMMD-WBVM-single-candidate",
+            "tau": tau_value,
+            "val_metric": cfg.selection_metric,
+            "val_score": score,
+            **info,
+        }
+        rows.append(row)
+        print(f"vMMD-WBVM tau={tau_value:.2f} validation {cfg.selection_metric}={score:.3f}", flush=True)
+        if score < best_score:
+            if best_model is not None:
+                del best_model
+                if device.type == "cuda":
+                    torch.cuda.empty_cache()
+            best_model = model
+            best_score = score
+            best_info = dict(info)
+            best_info.update(
+                {
+                    "selected_tau": tau_value,
+                    "validation_metric": cfg.selection_metric,
+                    "validation_score": score,
+                }
+            )
+        else:
+            del model
+            if device.type == "cuda":
+                torch.cuda.empty_cache()
+
+    if best_model is None:
+        raise RuntimeError("No vMMD-WBVM-single candidate finished")
+    with open(outdir / "vmmd_wbvm_single_selection.csv", "w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=sorted({k for row in rows for k in row.keys()}))
+        writer.writeheader()
+        writer.writerows(rows)
+    return best_model, best_info, rows
+
+
 def sample_pixel_meanflow_tr(batch: int, cfg: MnistConfig, device: torch.device) -> Tuple[torch.Tensor, torch.Tensor]:
     t = torch.sigmoid(torch.randn(batch, 1, device=device) * cfg.meanflow_logit_std + cfg.meanflow_logit_mean)
     r = torch.sigmoid(torch.randn(batch, 1, device=device) * cfg.meanflow_logit_std + cfg.meanflow_logit_mean)
@@ -1312,6 +1461,8 @@ def train_meanflow_cnn(
     logger = make_training_logger(log_dir, log_name, cfg, model, {"velocity_backbone": "CondConvNet", **(extra_hparams or {})})
     start = time.time()
     last_loss = 0.0
+    last_raw_mse = 0.0
+    early = EarlyStopper(cfg)
 
     for step in trange(cfg.steps, desc="MeanFlow", leave=False):
         x = cycle_batch(train_loader, device)
@@ -1329,23 +1480,39 @@ def train_meanflow_cnn(
         u, du_dt = torch.func.jvp(fn, (z, t), (v_target, torch.ones_like(t)))
         target = (v_target - (t - r).view(-1, 1, 1, 1) * du_dt).detach()
         loss = F.mse_loss(u, target)
+        raw_mse_u = F.mse_loss(u, target)
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
         opt.step()
         last_loss = float(loss.detach().cpu())
+        last_raw_mse = float(raw_mse_u.detach().cpu())
         if not math.isfinite(last_loss):
             raise RuntimeError("MeanFlow loss became non-finite")
         if logger is not None:
-            logger.log_step(step + 1, cfg, last_loss, current_lr(opt), {"r_mean": float(r.mean().detach().cpu()), "t_mean": float(t.mean().detach().cpu())})
+            logger.log_step(
+                step + 1,
+                cfg,
+                last_loss,
+                current_lr(opt),
+                {
+                    "raw_mse_u": last_raw_mse,
+                    "r_mean": float(r.mean().detach().cpu()),
+                    "t_mean": float(t.mean().detach().cpu()),
+                },
+            )
+        if early.update(step + 1, last_loss):
+            break
 
     info = {
         "train_seconds": time.time() - start,
-        "train_steps": cfg.steps,
+        "train_steps": early.stop_step or cfg.steps,
         "loss": last_loss,
+        "raw_mse_u": last_raw_mse,
         "nfe": 1,
         "model_space": cfg.model_space,
         "note": "MeanFlow identity: sorted-uniform r,t; CNN VelocityNet; one-step x=e-u(e,0,1)",
+        **early.info(cfg.steps),
     }
     if logger is not None:
         logger.close(info)
@@ -1375,6 +1542,11 @@ def train_meanflow(
     )
     start = time.time()
     last_loss = 0.0
+    last_loss_u = 0.0
+    last_loss_v = 0.0
+    last_raw_mse_u = 0.0
+    last_raw_mse_v = 0.0
+    early = EarlyStopper(cfg)
 
     for step in trange(cfg.steps, desc="MeanFlow", leave=False):
         x = cycle_space_batch(train_loader, cfg, device, codec)
@@ -1398,14 +1570,22 @@ def train_meanflow(
             has_aux=True,
         )
         compound_v = u + (t - r).view(-1, 1, 1, 1) * dudt.detach()
-        loss_u = adaptive_pmf_loss(compound_v - v_target.detach(), cfg)
-        loss_v = adaptive_pmf_loss(v_pred - v_target.detach(), cfg)
+        error_u = compound_v - v_target.detach()
+        error_v = v_pred - v_target.detach()
+        loss_u = adaptive_pmf_loss(error_u, cfg)
+        loss_v = adaptive_pmf_loss(error_v, cfg)
+        raw_mse_u = F.mse_loss(compound_v, v_target.detach())
+        raw_mse_v = F.mse_loss(v_pred, v_target.detach())
         loss = loss_u + loss_v
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
         opt.step()
         last_loss = float(loss.detach().cpu())
+        last_loss_u = float(loss_u.detach().cpu())
+        last_loss_v = float(loss_v.detach().cpu())
+        last_raw_mse_u = float(raw_mse_u.detach().cpu())
+        last_raw_mse_v = float(raw_mse_v.detach().cpu())
         if not math.isfinite(last_loss):
             raise RuntimeError("MeanFlow loss became non-finite")
         if logger is not None:
@@ -1415,20 +1595,29 @@ def train_meanflow(
                 last_loss,
                 current_lr(opt),
                 {
-                    "loss_u": float(loss_u.detach().cpu()),
-                    "loss_v": float(loss_v.detach().cpu()),
+                    "loss_u": last_loss_u,
+                    "loss_v": last_loss_v,
+                    "raw_mse_u": last_raw_mse_u,
+                    "raw_mse_v": last_raw_mse_v,
                     "r_mean": float(r.mean().detach().cpu()),
                     "t_mean": float(t.mean().detach().cpu()),
                 },
             )
+        if early.update(step + 1, last_loss):
+            break
 
     info = {
         "train_seconds": time.time() - start,
-        "train_steps": cfg.steps,
+        "train_steps": early.stop_step or cfg.steps,
         "loss": last_loss,
+        "loss_u": last_loss_u,
+        "loss_v": last_loss_v,
+        "raw_mse_u": last_raw_mse_u,
+        "raw_mse_v": last_raw_mse_v,
         "nfe": 1,
         "model_space": cfg.model_space,
         "note": "Pixel MeanFlow official core: DiT u/v heads; logit-normal (t,r); predicted-v JVP; adaptive velocity loss",
+        **early.info(cfg.steps),
     }
     if logger is not None:
         logger.close(info)
@@ -1484,7 +1673,10 @@ def train_shortcut_cnn(
     logger = make_training_logger(log_dir, log_name, cfg, model, {"velocity_backbone": "CondConvNet", **(extra_hparams or {})})
     start = time.time()
     last_loss = 0.0
+    last_flow_loss = 0.0
+    last_self_consistency_loss = 0.0
     flow_frac = float(cfg.shortcut_empirical_frac)
+    early = EarlyStopper(cfg)
 
     for step in trange(cfg.steps, desc="ShortcutFlow", leave=False):
         x1 = cycle_batch(train_loader, device)
@@ -1500,8 +1692,10 @@ def train_shortcut_cnn(
         x_flow = (1.0 - t_flow.view(-1, 1, 1, 1)) * x0[:flow_n] + t_flow.view(-1, 1, 1, 1) * x1[:flow_n]
         target_flow = x1[:flow_n] - x0[:flow_n]
         pred_flow = model(x_flow, torch.cat([t_flow, d_min], dim=1))
-        losses.append(F.mse_loss(pred_flow, target_flow))
+        flow_loss = F.mse_loss(pred_flow, target_flow)
+        losses.append(flow_loss)
         weights.append(flow_n)
+        self_consistency_loss = x1.new_tensor(0.0)
 
         if shortcut_n > 0:
             x0_sc = x0[flow_n:]
@@ -1515,7 +1709,8 @@ def train_shortcut_cnn(
                 v2 = ema_model(x_mid, torch.cat([t_sc + half, half], dim=1))
                 target_sc = (0.5 * (v1 + v2)).clamp(-4.0, 4.0)
             pred_sc = model(x_sc, torch.cat([t_sc, dt], dim=1))
-            losses.append(F.mse_loss(pred_sc, target_sc.detach()))
+            self_consistency_loss = F.mse_loss(pred_sc, target_sc.detach())
+            losses.append(self_consistency_loss)
             weights.append(shortcut_n)
 
         loss = sum(loss_i * weight for loss_i, weight in zip(losses, weights)) / sum(weights)
@@ -1525,20 +1720,38 @@ def train_shortcut_cnn(
         opt.step()
         update_ema_model(ema_model, model, cfg.shortcut_ema_decay)
         last_loss = float(loss.detach().cpu())
+        last_flow_loss = float(flow_loss.detach().cpu())
+        last_self_consistency_loss = float(self_consistency_loss.detach().cpu())
         if not math.isfinite(last_loss):
             raise RuntimeError("ShortcutFlow loss became non-finite")
         if logger is not None:
-            logger.log_step(step + 1, cfg, last_loss, current_lr(opt), {"flow_n": flow_n, "shortcut_n": shortcut_n})
+            logger.log_step(
+                step + 1,
+                cfg,
+                last_loss,
+                current_lr(opt),
+                {
+                    "flow_matching_loss": last_flow_loss,
+                    "self_consistency_loss": last_self_consistency_loss,
+                    "flow_n": flow_n,
+                    "shortcut_n": shortcut_n,
+                },
+            )
+        if early.update(step + 1, last_loss):
+            break
 
     info = {
         "train_seconds": time.time() - start,
-        "train_steps": cfg.steps,
+        "train_steps": early.stop_step or cfg.steps,
         "loss": last_loss,
+        "flow_matching_loss": last_flow_loss,
+        "self_consistency_loss": last_self_consistency_loss,
         "nfe": 1,
         "model_space": cfg.model_space,
         "note": "Shortcut Models: CNN VelocityNet; 75% flow grounding; EMA self-consistency",
         "shortcut_ema_decay": cfg.shortcut_ema_decay,
         "shortcut_empirical_frac": cfg.shortcut_empirical_frac,
+        **early.info(cfg.steps),
     }
     if logger is not None:
         logger.close(info)
@@ -1576,8 +1789,11 @@ def train_shortcut(
     )
     start = time.time()
     last_loss = 0.0
+    last_flow_loss = 0.0
+    last_self_consistency_loss = 0.0
     sections = int(math.log2(cfg.shortcut_min_steps))
     bootstrap_n = max(1, cfg.batch_size // cfg.shortcut_bootstrap_every)
+    early = EarlyStopper(cfg)
 
     for step in trange(cfg.steps, desc="ShortcutFlow", leave=False):
         x1 = cycle_space_batch(train_loader, cfg, device, codec)
@@ -1611,27 +1827,49 @@ def train_shortcut(
         dt_train = torch.cat([dt_base, flow_base], dim=0)
         target = torch.cat([target_bst, target_flow], dim=0)
         pred = model(x_train, t_train, dt_train)
-        loss = F.mse_loss(pred, target)
+        pred_bst = pred[:bst_n]
+        pred_flow = pred[bst_n:]
+        self_consistency_loss = F.mse_loss(pred_bst, target_bst)
+        flow_loss = F.mse_loss(pred_flow, target_flow)
+        loss = (self_consistency_loss * bst_n + flow_loss * flow_n) / bsz
         opt.zero_grad(set_to_none=True)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), cfg.grad_clip)
         opt.step()
         update_ema_model(ema_model, model, cfg.shortcut_ema_decay)
         last_loss = float(loss.detach().cpu())
+        last_flow_loss = float(flow_loss.detach().cpu())
+        last_self_consistency_loss = float(self_consistency_loss.detach().cpu())
         if not math.isfinite(last_loss):
             raise RuntimeError("ShortcutFlow loss became non-finite")
         if logger is not None:
-            logger.log_step(step + 1, cfg, last_loss, current_lr(opt), {"bootstrap_n": bst_n, "flow_n": flow_n})
+            logger.log_step(
+                step + 1,
+                cfg,
+                last_loss,
+                current_lr(opt),
+                {
+                    "flow_matching_loss": last_flow_loss,
+                    "self_consistency_loss": last_self_consistency_loss,
+                    "bootstrap_n": bst_n,
+                    "flow_n": flow_n,
+                },
+            )
+        if early.update(step + 1, last_loss):
+            break
 
     info = {
         "train_seconds": time.time() - start,
-        "train_steps": cfg.steps,
+        "train_steps": early.stop_step or cfg.steps,
         "loss": last_loss,
+        "flow_matching_loss": last_flow_loss,
+        "self_consistency_loss": last_self_consistency_loss,
         "nfe": 1,
         "model_space": cfg.model_space,
         "note": "Shortcut Models official core: shared DiT; 1/8 EMA bootstrap; balanced dt_base; flow grounding",
         "shortcut_ema_decay": cfg.shortcut_ema_decay,
         "shortcut_bootstrap_every": cfg.shortcut_bootstrap_every,
+        **early.info(cfg.steps),
     }
     if logger is not None:
         logger.close(info)
@@ -1704,6 +1942,7 @@ def train_drifting(
     )
     start = time.time()
     last_loss = 0.0
+    early = EarlyStopper(cfg)
 
     for step in trange(cfg.steps, desc="Drifting", leave=False):
         x_real = cycle_space_batch(train_loader, cfg, device, codec)
@@ -1738,10 +1977,12 @@ def train_drifting(
                 current_lr(opt),
                 {"drift_rms": float(field.reshape(field.shape[0], -1).pow(2).mean().sqrt().detach().cpu())},
             )
+        if early.update(step + 1, last_loss):
+            break
 
     info = {
         "train_seconds": time.time() - start,
-        "train_steps": cfg.steps,
+        "train_steps": early.stop_step or cfg.steps,
         "loss": last_loss,
         "nfe": 1,
         "note": (
@@ -1753,6 +1994,7 @@ def train_drifting(
         "drifting_normalize_distances": cfg.drifting_normalize_distances,
         "drifting_normalize_drift": cfg.drifting_normalize_drift,
         "model_space": cfg.model_space,
+        **early.info(cfg.steps),
     }
     if logger is not None:
         logger.close(info)
@@ -2278,6 +2520,87 @@ def write_csv(rows: List[Dict[str, object]], outpath: Path) -> None:
         writer.writerows(rows)
 
 
+def load_json_file(path: Path) -> Dict[str, object]:
+    if not path.is_file():
+        return {}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_run_hyperparameters(rows: List[Dict[str, object]], outdir: Path) -> None:
+    summaries: List[Dict[str, object]] = []
+    flat_rows: List[Dict[str, object]] = []
+    for row in rows:
+        log_dir = row.get("log_dir")
+        manifest: Dict[str, object] = {}
+        if log_dir:
+            path = Path(str(log_dir))
+            if not path.is_absolute():
+                path = outdir.parent / path
+            manifest = load_json_file(path / "manifest.json")
+        hparams = manifest.get("hyperparameters", {}) if isinstance(manifest, dict) else {}
+        arch = manifest.get("architecture", {}) if isinstance(manifest, dict) else {}
+        extra = manifest.get("extra_hyperparameters", {}) if isinstance(manifest, dict) else {}
+        if not isinstance(hparams, dict):
+            hparams = {}
+        if not isinstance(arch, dict):
+            arch = {}
+        if not isinstance(extra, dict):
+            extra = {}
+        pixel_dit = arch.get("pixel_dit", {})
+        if not isinstance(pixel_dit, dict):
+            pixel_dit = {}
+        summary = {
+            "method": row.get("method", ""),
+            "mnist_fid": row.get("mnist_fid", ""),
+            "kid_z_x1000": row.get("mnist_kid_x1000", ""),
+            "loss": row.get("loss", ""),
+            "log_dir": log_dir or "",
+            "architecture": arch,
+            "training_hyperparameters": hparams,
+            "extra_hyperparameters": extra,
+            "selected_or_tuned": {
+                key: row.get(key)
+                for key in sorted(row.keys())
+                if key.startswith("selected_") or key.startswith("tuned_") or key in {"validation_metric", "validation_score"}
+            },
+        }
+        summaries.append(summary)
+        flat_rows.append(
+            {
+                "method": row.get("method", ""),
+                "mnist_fid": row.get("mnist_fid", ""),
+                "loss": row.get("loss", ""),
+                "train_steps": row.get("train_steps", ""),
+                "planned_steps": row.get("planned_steps", ""),
+                "stopped_early": row.get("stopped_early", ""),
+                "stop_step": row.get("stop_step", ""),
+                "early_stop_reason": row.get("early_stop_reason", ""),
+                "selected_tau": row.get("selected_tau", ""),
+                "tuned_lr": row.get("tuned_lr", ""),
+                "tuned_meanflow_norm_p": row.get("tuned_meanflow_norm_p", ""),
+                "tuned_shortcut_bootstrap_every": row.get("tuned_shortcut_bootstrap_every", ""),
+                "tuned_shortcut_ema_decay": row.get("tuned_shortcut_ema_decay", ""),
+                "model_class": arch.get("class_name", ""),
+                "trainable_parameters": arch.get("trainable_parameters", ""),
+                "direct_backbone": arch.get("direct_backbone", ""),
+                "model_space": arch.get("model_space", ""),
+                "pixel_dit_hidden": pixel_dit.get("hidden_size", ""),
+                "pixel_dit_depth": pixel_dit.get("depth", ""),
+                "pixel_dit_heads": pixel_dit.get("num_heads", ""),
+                "pixel_patch_size": pixel_dit.get("patch_size", ""),
+                "pixel_register_tokens": pixel_dit.get("num_register_tokens", ""),
+                "learning_rate": hparams.get("learning_rate", ""),
+                "weight_decay": hparams.get("weight_decay", ""),
+                "grad_clip": hparams.get("grad_clip", ""),
+                "batch_size": hparams.get("batch_size", ""),
+                "estimated_epochs": hparams.get("estimated_epochs", ""),
+                "extra_hyperparameters_json": json.dumps(extra, sort_keys=True),
+            }
+        )
+    (outdir / "run_hyperparameters.json").write_text(json.dumps(summaries, indent=2), encoding="utf-8")
+    write_csv(flat_rows, outdir / "run_hyperparameters.csv")
+
+
 def preset_config(preset: str, seed: int, methods: List[str], model_space: str = "pixel") -> MnistConfig:
     if preset == "smoke":
         return MnistConfig(
@@ -2342,6 +2665,10 @@ def preset_config(preset: str, seed: int, methods: List[str], model_space: str =
             meanflow_norm_p=1.0,
             meanflow_norm_eps=0.01,
             shortcut_bootstrap_every=8,
+            early_stop_min_steps=0,
+            early_stop_patience=0,
+            early_stop_min_delta=0.0,
+            early_stop_metric="abs_loss",
             methods=methods,
         )
     if preset == "quick":
@@ -2407,6 +2734,10 @@ def preset_config(preset: str, seed: int, methods: List[str], model_space: str =
             meanflow_norm_p=1.0,
             meanflow_norm_eps=0.01,
             shortcut_bootstrap_every=8,
+            early_stop_min_steps=300,
+            early_stop_patience=200,
+            early_stop_min_delta=1e-4,
+            early_stop_metric="abs_loss",
             methods=methods,
         )
     if preset == "standard":
@@ -2472,6 +2803,10 @@ def preset_config(preset: str, seed: int, methods: List[str], model_space: str =
             meanflow_norm_p=1.0,
             meanflow_norm_eps=0.01,
             shortcut_bootstrap_every=8,
+            early_stop_min_steps=1200,
+            early_stop_patience=500,
+            early_stop_min_delta=1e-4,
+            early_stop_metric="abs_loss",
             methods=methods,
         )
     raise ValueError(f"Unknown preset {preset}")
@@ -2512,24 +2847,39 @@ def tune_meanflow(
     best_model: Optional[nn.Module] = None
     best_info: Dict[str, object] = {}
     best_score = float("inf")
-    for i, lr in enumerate([1e-4, 2e-4, 5e-4]):
+    grid = [
+        (1e-4, 1.0),
+        (2e-4, 1.0),
+        (5e-4, 1.0),
+        (5e-4, 0.5),
+        (1e-3, 0.5),
+        (5e-4, 0.0),
+    ]
+    for i, (lr, norm_p) in enumerate(grid):
         set_seed(cfg.seed + 2000 + i)
-        local_cfg = cfg_with(cfg, lr=lr)
+        local_cfg = cfg_with(cfg, lr=lr, meanflow_norm_p=norm_p)
         model, info = train_meanflow(
             train_loader,
             local_cfg,
             device,
             codec,
             log_dir=log_dir,
-            log_name=f"MeanFlow-tune-lr-{lr:g}",
-            extra_hparams={"tune_lr": lr},
+            log_name=f"MeanFlow-tune-lr-{lr:g}-normp-{norm_p:g}",
+            extra_hparams={"tune_lr": lr, "tune_meanflow_norm_p": norm_p},
         )
         score = selection_score_for_sampler(
             lambda n, b, m=model: sample_meanflow(m, n, b, device, cfg, codec), val_loader, cfg, device, feature_net
         )
-        row = {"method": "MeanFlow", "tune_lr": lr, "val_metric": cfg.selection_metric, "val_score": score, **info}
+        row = {
+            "method": "MeanFlow",
+            "tune_lr": lr,
+            "tune_meanflow_norm_p": norm_p,
+            "val_metric": cfg.selection_metric,
+            "val_score": score,
+            **info,
+        }
         rows.append(row)
-        print(f"MeanFlow tune lr={lr:g} {cfg.selection_metric}={score:.4f}", flush=True)
+        print(f"MeanFlow tune lr={lr:g} norm_p={norm_p:g} {cfg.selection_metric}={score:.4f}", flush=True)
         if score < best_score:
             if best_model is not None:
                 del best_model
@@ -2538,7 +2888,14 @@ def tune_meanflow(
             best_model = model
             best_score = score
             best_info = dict(info)
-            best_info.update({"tuned_lr": lr, "validation_metric": cfg.selection_metric, "validation_score": score})
+            best_info.update(
+                {
+                    "tuned_lr": lr,
+                    "tuned_meanflow_norm_p": norm_p,
+                    "validation_metric": cfg.selection_metric,
+                    "validation_score": score,
+                }
+            )
         else:
             del model
             if device.type == "cuda":
@@ -2562,8 +2919,8 @@ def tune_shortcut(
     best_info: Dict[str, object] = {}
     best_score = float("inf")
     grid = []
-    for lr in [1e-4, 2e-4]:
-        for bootstrap_every in [4, 8]:
+    for lr in [1e-4, 2e-4, 5e-4]:
+        for bootstrap_every in [2, 4]:
             for ema in [0.99, 0.995]:
                 grid.append((lr, bootstrap_every, ema))
     for i, (lr, bootstrap_every, ema) in enumerate(grid):
@@ -2655,6 +3012,14 @@ def run(args: argparse.Namespace) -> None:
         cfg.vector_loss_statistic = args.vector_loss_statistic
     if args.direct_backbone is not None:
         cfg.direct_backbone = args.direct_backbone
+    if args.early_stop_min_steps is not None:
+        cfg.early_stop_min_steps = args.early_stop_min_steps
+    if args.early_stop_patience is not None:
+        cfg.early_stop_patience = args.early_stop_patience
+    if args.early_stop_min_delta is not None:
+        cfg.early_stop_min_delta = args.early_stop_min_delta
+    if args.early_stop_metric is not None:
+        cfg.early_stop_metric = args.early_stop_metric
     if args.no_extra_mnist_metrics:
         cfg.extra_mnist_metrics = False
     cfg.drifting_space = cfg.model_space
@@ -2750,7 +3115,34 @@ def run(args: argparse.Namespace) -> None:
             flush=True,
         )
 
-    for key in [m for m in cfg.methods if m != "wbvm_single"]:
+    if "wbvm_vector" in cfg.methods:
+        model, info, candidate_rows = train_wbvm_vector_single(
+            infinite,
+            val_loader,
+            cfg,
+            device,
+            outdir,
+            feature_net,
+            codec,
+            log_dir=log_dir,
+        )
+        tuning_rows.extend(candidate_rows)
+        sampler = lambda n, b, m=model: sample_direct(m, n, b, device, cfg, codec)
+        metrics = compute_eval_metrics_for_sampler(lambda n, b: sampler(n, b), test_loader, cfg, device, feature_net)
+        samples = sampler(32, min(32, cfg.fid_batch_size))
+        row = {"method": "vMMD-WBVM", "fid": metrics[primary_fid_key], **metrics, **info}
+        rows.append(row)
+        sample_grid["vMMD-WBVM"] = samples
+        print(
+            f"vMMD-WBVM  Inception-FID={metrics['inception_fid']:.3f} "
+            f"MNIST-FID={metrics.get('mnist_fid', float('nan')):.3f}",
+            flush=True,
+        )
+        del model
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+
+    for key in [m for m in cfg.methods if m not in {"wbvm_single", "wbvm_vector"}]:
         label, trainer, sample_fn = trainers[key]
         if args.tune_baselines and key == "meanflow":
             model, info, candidate_rows = tune_meanflow(infinite, val_loader, cfg, device, feature_net, codec, log_dir=log_dir)
@@ -2778,6 +3170,7 @@ def run(args: argparse.Namespace) -> None:
 
     rows = sorted(rows, key=lambda r: float(r["fid"]))
     write_csv(rows, outdir / "metrics_summary.csv")
+    write_run_hyperparameters(rows, outdir)
     if tuning_rows:
         write_csv(tuning_rows, outdir / "baseline_tuning.csv")
     save_table(rows, outdir / "mnist_fid_table.png")
@@ -2793,7 +3186,7 @@ def main() -> None:
     parser.add_argument("--model-space", default="pixel", choices=["pixel", "latent"])
     parser.add_argument("--outdir", default="outputs_mnist_quick")
     parser.add_argument("--data-dir", default="data")
-    parser.add_argument("--methods", default="wbvm_all,meanflow,shortcut,drifting")
+    parser.add_argument("--methods", default="wbvm_single,wbvm_vector,meanflow,shortcut,drifting")
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--device", default=None)
     parser.add_argument("--num-threads", type=int, default=None)
@@ -2812,6 +3205,10 @@ def main() -> None:
     parser.add_argument("--selection-metric", choices=["inception_fid", "mnist_fid", "mnist_kid"], default=None)
     parser.add_argument("--vector-loss-statistic", choices=["u", "v"], default=None)
     parser.add_argument("--direct-backbone", choices=["dit", "cnn"], default=None)
+    parser.add_argument("--early-stop-min-steps", type=int, default=None)
+    parser.add_argument("--early-stop-patience", type=int, default=None)
+    parser.add_argument("--early-stop-min-delta", type=float, default=None)
+    parser.add_argument("--early-stop-metric", choices=["loss", "abs_loss"], default=None)
     parser.add_argument("--no-extra-mnist-metrics", action="store_true")
     parser.add_argument("--tune-baselines", action="store_true")
     args = parser.parse_args()
